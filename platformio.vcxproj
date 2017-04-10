@@ -1,0 +1,441 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Path>C:\\Users\\ache\\.platformio\\penv\\Scripts;C:\\Python27\\;C:\\Python27\\Scripts;C:\\ProgramData\\Oracle\\Java\\javapath;C:\\Windows\\system32;C:\\Windows;C:\\Windows\\System32\\Wbem;C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\;C:\\Users\\ache\\.dnx\\bin;C:\\Program Files\\Microsoft DNX\\Dnvm\\;C:\\Program Files (x86)\\Windows Kits\\8.1\\Windows Performance Toolkit\\;C:\\Program Files\\Microsoft SQL Server\\120\\Tools\\Binn\\;C:\\Program Files\\Microsoft SQL Server\\130\\Tools\\Binn\\;C:\\Program Files\\Git\\cmd;C:\\Program Files (x86)\\Microsoft SQL Server\\100\\Tools\\Binn\\VSShell\\Common7\\IDE\\;C:\\Program Files (x86)\\Microsoft SQL Server\\100\\Tools\\Binn\\;C:\\Program Files\\Microsoft SQL Server\\100\\Tools\\Binn\\;C:\\Program Files (x86)\\Microsoft SQL Server\\100\\DTS\\Binn\\;C:\\Program Files\\LLVM\\bin;C:\\Users\\ache\\AppData\\Local\\atom\\bin;C:\\Python27\\;C:\\Python27\\Scripts;C:\\ProgramData\\Oracle\\Java\\javapath;C:\\Windows\\system32;C:\\Windows;C:\\Windows\\System32\\Wbem;C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\;C:\\Users\\ache\\.dnx\\bin;C:\\Program Files\\Microsoft DNX\\Dnvm\\;C:\\Program Files (x86)\\Windows Kits\\8.1\\Windows Performance Toolkit\\;C:\\Program Files\\Microsoft SQL Server\\120\\Tools\\Binn\\;C:\\Program Files\\Microsoft SQL Server\\130\\Tools\\Binn\\;C:\\Program Files\\Git\\cmd;C:\\Program Files (x86)\\Microsoft SQL Server\\100\\Tools\\Binn\\VSShell\\Common7\\IDE\\;C:\\Program Files (x86)\\Microsoft SQL Server\\100\\Tools\\Binn\\;C:\\Program Files\\Microsoft SQL Server\\100\\Tools\\Binn\\;C:\\Program Files (x86)\\Microsoft SQL Server\\100\\DTS\\Binn\\;C:\\Program Files\\LLVM\\bin;C:\\Users\\ache\\AppData\\Local\\atom\\bin</Path>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{0FA9C3A8-452B-41EF-A418-9102B170F49F}</ProjectGuid>
+    <Keyword>MakeFileProj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <NMakeBuildCommandLine>platformio -f -c visualstudio run</NMakeBuildCommandLine>
+    <NMakeCleanCommandLine>platformio -f -c visualstudio run --target clean</NMakeCleanCommandLine>
+    <NMakePreprocessorDefinitions>ARDUINO=20300;LWIP_OPEN_SRC;F_CPU=80000000L;__ets__;ICACHE_FLASH;PLATFORMIO=30300;ESP8266;ARDUINO_ARCH_ESP8266;ARDUINO_ESP8266_ESP12;PLUGIN_BUILD_NORMAL;BUILD_GIT=""</NMakePreprocessorDefinitions>
+    <NMakeIncludeSearchPath>$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\tools\sdk\include;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\tools\sdk\lwip\include;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\cores\esp8266;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\variants\nodemcu;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\ESP8266WiFi\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\ESP8266WebServer\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\ESP8266HTTPUpdateServer\src;D:\proj\esp\ESPEasyNew\ESPEasy\lib\IRremoteESP8266;D:\proj\esp\ESPEasyNew\ESPEasy\lib\Adafruit_NeoPixel;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\ESP8266mDNS;D:\proj\esp\ESPEasyNew\ESPEasy\lib\pubsubclient\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\SPI;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\SD\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\ArduinoOTA;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\Wire;D:\proj\esp\ESPEasyNew\ESPEasy\lib\esp8266-oled-ssd1306;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\Servo\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\SoftwareSerial;D:\proj\esp\ESPEasyNew\ESPEasy\lib\ArduinoJson;D:\proj\esp\ESPEasyNew\ESPEasy\lib\LiquidCrystal_I2C;D:\proj\esp\ESPEasyNew\ESPEasy\lib\Adafruit_Motor_Shield_V2;D:\proj\esp\ESPEasyNew\ESPEasy\lib\Adafruit_Motor_Shield_V2\utility;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\DNSServer\src;D:\proj\esp\ESPEasyNew\ESPEasy\src;D:\proj\esp\ESPEasyNew\ESPEasy\lib\Adafruit_Motor_Shield_V2;D:\proj\esp\ESPEasyNew\ESPEasy\lib\Adafruit_Motor_Shield_V2\utility;D:\proj\esp\ESPEasyNew\ESPEasy\lib\Adafruit_NeoPixel;D:\proj\esp\ESPEasyNew\ESPEasy\lib\ArduinoJson;D:\proj\esp\ESPEasyNew\ESPEasy\lib\ArduinoJson;D:\proj\esp\ESPEasyNew\ESPEasy\lib\IRremoteESP8266;D:\proj\esp\ESPEasyNew\ESPEasy\lib\IRremoteESP8266;D:\proj\esp\ESPEasyNew\ESPEasy\lib\LiquidCrystal_I2C;D:\proj\esp\ESPEasyNew\ESPEasy\lib\esp8266-oled-ssd1306;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\Wire;D:\proj\esp\ESPEasyNew\ESPEasy\lib\esp8266-oled-ssd1306;D:\proj\esp\ESPEasyNew\ESPEasy\lib\pubsubclient\src;D:\proj\esp\ESPEasyNew\ESPEasy\lib\pubsubclient\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\ArduinoOTA;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\DNSServer\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\EEPROM;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\ESP8266AVRISP\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\ESP8266HTTPClient\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\ESP8266HTTPUpdateServer\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\ESP8266SSDP;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\ESP8266WebServer\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\ESP8266WiFi\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\ESP8266WiFiMesh\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\ESP8266httpUpdate\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\ESP8266mDNS;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\Ethernet\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\GDBStub\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\Hash\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\SD\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\SPI;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\Servo\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\SoftwareSerial;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\SoftwareSerial;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\TFT_Touch_Shield_V2;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\Ticker;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\Wire;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\esp8266\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\toolchain-xtensa\xtensa-lx106-elf\include;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\toolchain-xtensa\lib\gcc\xtensa-lx106-elf\4.8.2\include;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\toolchain-xtensa\lib\gcc\xtensa-lx106-elf\4.8.2\include-fixed</NMakeIncludeSearchPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <NMakeBuildCommandLine>platformio run</NMakeBuildCommandLine>
+    <NMakeCleanCommandLine>platformio run --target clean</NMakeCleanCommandLine>
+    <NMakePreprocessorDefinitions>ARDUINO=20300;LWIP_OPEN_SRC;F_CPU=80000000L;__ets__;ICACHE_FLASH;PLATFORMIO=30300;ESP8266;ARDUINO_ARCH_ESP8266;ARDUINO_ESP8266_ESP12;PLUGIN_BUILD_NORMAL;BUILD_GIT=""</NMakePreprocessorDefinitions>
+    <NMakeIncludeSearchPath>$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\tools\sdk\include;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\tools\sdk\lwip\include;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\cores\esp8266;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\variants\nodemcu;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\ESP8266WiFi\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\ESP8266WebServer\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\ESP8266HTTPUpdateServer\src;D:\proj\esp\ESPEasyNew\ESPEasy\lib\IRremoteESP8266;D:\proj\esp\ESPEasyNew\ESPEasy\lib\Adafruit_NeoPixel;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\ESP8266mDNS;D:\proj\esp\ESPEasyNew\ESPEasy\lib\pubsubclient\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\SPI;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\SD\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\ArduinoOTA;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\Wire;D:\proj\esp\ESPEasyNew\ESPEasy\lib\esp8266-oled-ssd1306;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\Servo\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\SoftwareSerial;D:\proj\esp\ESPEasyNew\ESPEasy\lib\ArduinoJson;D:\proj\esp\ESPEasyNew\ESPEasy\lib\LiquidCrystal_I2C;D:\proj\esp\ESPEasyNew\ESPEasy\lib\Adafruit_Motor_Shield_V2;D:\proj\esp\ESPEasyNew\ESPEasy\lib\Adafruit_Motor_Shield_V2\utility;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\DNSServer\src;D:\proj\esp\ESPEasyNew\ESPEasy\src;D:\proj\esp\ESPEasyNew\ESPEasy\lib\Adafruit_Motor_Shield_V2;D:\proj\esp\ESPEasyNew\ESPEasy\lib\Adafruit_Motor_Shield_V2\utility;D:\proj\esp\ESPEasyNew\ESPEasy\lib\Adafruit_NeoPixel;D:\proj\esp\ESPEasyNew\ESPEasy\lib\ArduinoJson;D:\proj\esp\ESPEasyNew\ESPEasy\lib\ArduinoJson;D:\proj\esp\ESPEasyNew\ESPEasy\lib\IRremoteESP8266;D:\proj\esp\ESPEasyNew\ESPEasy\lib\IRremoteESP8266;D:\proj\esp\ESPEasyNew\ESPEasy\lib\LiquidCrystal_I2C;D:\proj\esp\ESPEasyNew\ESPEasy\lib\esp8266-oled-ssd1306;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\Wire;D:\proj\esp\ESPEasyNew\ESPEasy\lib\esp8266-oled-ssd1306;D:\proj\esp\ESPEasyNew\ESPEasy\lib\pubsubclient\src;D:\proj\esp\ESPEasyNew\ESPEasy\lib\pubsubclient\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\ArduinoOTA;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\DNSServer\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\EEPROM;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\ESP8266AVRISP\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\ESP8266HTTPClient\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\ESP8266HTTPUpdateServer\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\ESP8266SSDP;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\ESP8266WebServer\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\ESP8266WiFi\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\ESP8266WiFiMesh\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\ESP8266httpUpdate\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\ESP8266mDNS;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\Ethernet\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\GDBStub\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\Hash\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\SD\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\SPI;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\Servo\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\SoftwareSerial;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\SoftwareSerial;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\TFT_Touch_Shield_V2;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\Ticker;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\Wire;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\framework-arduinoespressif8266\libraries\esp8266\src;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\toolchain-xtensa\xtensa-lx106-elf\include;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\toolchain-xtensa\lib\gcc\xtensa-lx106-elf\4.8.2\include;$(HOMEDRIVE)$(HOMEPATH)\.platformio\packages\toolchain-xtensa\lib\gcc\xtensa-lx106-elf\4.8.2\include-fixed</NMakeIncludeSearchPath>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+  <ItemGroup>
+    <None Include="platformio.ini" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\Command.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\Controller.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\ESPEasy.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\Hardware.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\Misc.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\Networking.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\Serial.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\WebServer.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\Wifi.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_C001.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_C002.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_C003.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_C004.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_C005.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_C006.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_C007.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_C008.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_C009.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_C010.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_C011.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_N001_Email.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_N002_Buzzer.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P001_Switch.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P002_ADC.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P003_Pulse.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P004_Dallas.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P005_DHT.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P006_BMP085.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P007_PCF8591.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P008_RFID.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P009_MCP.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P010_BH1750.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P011_PME.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P012_LCD.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P013_HCSR04.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P014_SI7021.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P015_TLS2561.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P016_IR.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P017_PN532.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P018_Dust.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P019_PCF8574.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P020_Ser2Net.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P021_Level.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P022_PCA9685.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P023_OLED.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P024_MLX90614.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P025_ADS1115.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P026_Sysinfo.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P027_INA219.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P028_BME280.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P029_Output.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P030_BMP280.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P031_SHT1X.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P032_MS5611.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P033_Dummy.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P034_DHT12.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P035_IRTX.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P036_FrameOLED.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P037_MQTTImport.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P038_NeoPixel.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P039_Thermocouple.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P040_ID12.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P041_NeoClock.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P042_Candle.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P043_ClkOutput.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P044_P1WifiGateway.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P045_MPU6050.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P046_VentusW266.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P047_i2c-soil-moisture-sensor.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P048_Motorshield_v2.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P049_MHZ19.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\_P143_Scheduler.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\__CPlugin.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\__NPlugin.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\__Plugin.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\__ReleaseNotes.ino">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
