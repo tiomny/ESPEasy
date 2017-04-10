@@ -272,8 +272,8 @@
 #include <Wire.h>
 #include <SPI.h>
 #include <PubSubClient.h>
-#include <ArduinoJson.h>
-#include <LiquidCrystal_I2C.h>
+// #include <ArduinoJson.h>
+// #include <LiquidCrystal_I2C.h>
 #include <Servo.h>
 #define FS_NO_GLOBALS
 #include <FS.h>
@@ -308,8 +308,6 @@ const byte DNS_PORT = 53;
 IPAddress apIP(192, 168, 4, 1);
 DNSServer dnsServer;
 
-Servo myservo1;
-Servo myservo2;
 
 // MQTT client
 WiFiClient mqtt;
@@ -833,6 +831,8 @@ void run50TimesPerSecond()
 {
   timer20ms = millis() + 20;
   PluginCall(PLUGIN_FIFTY_PER_SECOND, 0, dummyString);
+
+  statusLED(false);
 }
 
 /*********************************************************************************************\
@@ -1149,7 +1149,6 @@ void backgroundtasks()
 
   WebServer.handleClient();
   MQTTclient.loop();
-  statusLED(false);
   checkUDP();
 
   #ifdef FEATURE_ARDUINO_OTA

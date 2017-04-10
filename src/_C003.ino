@@ -28,7 +28,7 @@ boolean CPlugin_003(byte function, struct EventStruct *event, String& string)
         string = F(CPLUGIN_NAME_003);
         break;
       }
-      
+
     case CPLUGIN_PROTOCOL_SEND:
       {
         ControllerSettingsStruct ControllerSettings;
@@ -74,7 +74,7 @@ boolean CPlugin_003(byte function, struct EventStruct *event, String& string)
         while (client.available() && millis() < timer && !success)
         {
           String line = client.readStringUntil('\n');
-          if (line.substring(0, 20) == "Enter your password:")
+          if (line.substring(0, 20) == PSTR("Enter your password:"))
           {
             success = true;
             strcpy_P(log, PSTR("TELNT: Password request ok"));
@@ -108,4 +108,3 @@ boolean CPlugin_003(byte function, struct EventStruct *event, String& string)
   }
   return success;
 }
-

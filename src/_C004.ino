@@ -28,7 +28,7 @@ boolean CPlugin_004(byte function, struct EventStruct *event, String& string)
         string = F(CPLUGIN_NAME_004);
         break;
       }
-      
+
     case CPLUGIN_PROTOCOL_SEND:
       {
         ControllerSettingsStruct ControllerSettings;
@@ -113,4 +113,3 @@ boolean CPlugin_004(byte function, struct EventStruct *event, String& string)
   }
   return success;
 }
-

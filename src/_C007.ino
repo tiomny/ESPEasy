@@ -28,7 +28,7 @@ boolean CPlugin_007(byte function, struct EventStruct *event, String& string)
         string = F(CPLUGIN_NAME_007);
         break;
       }
-      
+
     case CPLUGIN_PROTOCOL_SEND:
       {
         ControllerSettingsStruct ControllerSettings;
@@ -51,15 +51,15 @@ boolean CPlugin_007(byte function, struct EventStruct *event, String& string)
           addLog(LOG_LEVEL_ERROR, log);
           return false;
         }
-        statusLED(true);        
+        statusLED(true);
         if (connectionFailures)
           connectionFailures--;
 
         String postDataStr = F("GET /emoncms/input/post.json?node=");
-        
+
         postDataStr += Settings.Unit;
         postDataStr += F("&json=");
-        
+
         switch (event->sensorType)
         {
           case SENSOR_TYPE_SINGLE:                      // single value sensor, used for Dallas, BH1750, etc
@@ -151,4 +151,3 @@ boolean CPlugin_007(byte function, struct EventStruct *event, String& string)
   }
   return success;
 }
-

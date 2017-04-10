@@ -102,4 +102,3 @@ boolean C010_Send(struct EventStruct *event, byte varIndex, float value, unsigne
   addLog(LOG_LEVEL_DEBUG_MORE, log);
 
 }
-
