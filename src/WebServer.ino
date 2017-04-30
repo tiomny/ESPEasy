@@ -376,10 +376,7 @@ void handle_config() {
   reply += F("<TR><TD>Sleep Delay:<TD><input type='text' name='delay' value='");
   reply += Settings.Delay;
   reply += F("'><TR><TD>Sleep enabled:<TD>");
-  if (Settings.deepSleep)
-    reply += F("<input type=checkbox name='deepsleep' checked>");
-  else
-    reply += F("<input type=checkbox name='deepsleep'>");
+  addCheckBox(reply, F("deepsleep"), Settings.deepSleep);
 
   reply += F("<a class=\"button-link\" href=\"http://www.letscontrolit.com/wiki/index.php/SleepMode\" target=\"_blank\">?</a>");
 
@@ -628,10 +625,7 @@ void handle_controllers() {
       }
 
       reply += F("<TR><TD>Enabled:<TD>");
-      if (Settings.ControllerEnabled[index - 1])
-        reply += F("<input type=checkbox name=controllerenabled checked>");
-      else
-        reply += F("<input type=checkbox name=controllerenabled>");
+      addCheckBox(reply, F("controllerenabled"), Settings.ControllerEnabled[index - 1]);
 
       TempEvent.ProtocolIndex = index - 1;
       CPlugin_ptr[ProtocolIndex](CPLUGIN_WEBFORM_LOAD, &TempEvent, reply);
@@ -822,10 +816,7 @@ void handle_notifications() {
       }
 
       reply += F("<TR><TD>Enabled:<TD>");
-      if (Settings.NotificationEnabled[index - 1])
-        reply += F("<input type=checkbox name=notificationenabled checked>");
-      else
-        reply += F("<input type=checkbox name=notificationenabled>");
+      addCheckBox(reply, F("notificationenabled"), Settings.NotificationEnabled[index - 1]);
 
       TempEvent.NotificationIndex = index - 1;
       NPlugin_ptr[NotificationProtocolIndex](NPLUGIN_WEBFORM_LOAD, &TempEvent, reply);
@@ -856,10 +847,15 @@ void handle_hardware() {
 
   if (pin_i2c_sda.length() != 0)
   {
+    Settings.Pin_status_led  = pin_status_led.toInt();
+    Settings.Pin_status_led_Inversed  = WebServer.arg(F("pledi")) == "on";
+
     Settings.Pin_i2c_sda     = pin_i2c_sda.toInt();
     Settings.Pin_i2c_scl     = pin_i2c_scl.toInt();
-    Settings.Pin_status_led  = pin_status_led.toInt();
+
+    Settings.InitSPI = WebServer.arg(F("initspi")) == "on";      // SPI Init
     Settings.Pin_sd_cs  = pin_sd_cs.toInt();
+
     Settings.PinBootStates[0]  =  WebServer.arg(F("p0")).toInt();
     Settings.PinBootStates[2]  =  WebServer.arg(F("p2")).toInt();
     Settings.PinBootStates[4]  =  WebServer.arg(F("p4")).toInt();
@@ -872,33 +868,43 @@ void handle_hardware() {
     Settings.PinBootStates[15] =  WebServer.arg(F("p15")).toInt();
     Settings.PinBootStates[16] =  WebServer.arg(F("p16")).toInt();
 
-    Settings.InitSPI = WebServer.arg(F("initspi")) == "on";      // SPI Init
-
     if (!SaveSettings())
       reply += F("<span style=\"color:red\">Error saving to flash!</span>");
-
   }
 
   reply += F("<form  method='post'><table><TH>Hardware Settings<TH><TR><TD>");
-  reply += F("<TR><TD>Wifi Status Led:<TD>");
+  reply += F("<TR><TD><b>Wifi Status LED:</b><TD>");
+  reply += F("<TR><TD>Pin LED:<TD>");
   addPinSelect(false, reply, "pled", Settings.Pin_status_led);
+  reply += F("<TR><TD>Inversed LED:<TD>");
+  if (Settings.Pin_status_led_Inversed)
+    reply += F("<input type=checkbox id='pledi'  name='pledi' checked>&nbsp;");
+  else
+    reply += F("<input type=checkbox id='pledi' name='pledi'>&nbsp;");
+  reply += F("<TR><TD><TD>(Note: Use &rsquo;GPIO-2 (D4)&rsquo; with &rsquo;Inversed&rsquo; checked for onboard LED)");
+
+  reply += F("<TR><TD><hr><TD><hr>");
+
+  reply += F("<TR><TD><b>I2C Interface:</b><TD>");
   reply += F("<TR><TD>SDA:<TD>");
   addPinSelect(true, reply, "psda", Settings.Pin_i2c_sda);
   reply += F("<TR><TD>SCL:<TD>");
   addPinSelect(true, reply, "pscl", Settings.Pin_i2c_scl);
 
+  reply += F("<TR><TD><hr><TD><hr>");
+
   // SPI Init
+  reply += F("<TR><TD><b>SPI Interface:</b><TD>");
   reply += F("<TR><TD>Init SPI:<TD>");
-  if (Settings.InitSPI)
-    reply += F("<input type=checkbox id='initspi'  name='initspi' checked>&nbsp;");
-  else
-    reply += F("<input type=checkbox id='initspi' name='initspi'>&nbsp;");
-  reply += F("(Note : Chip Select (CS) config must be done in the plugin)");
+  addCheckBox(reply, F("initspi"), Settings.InitSPI);
+  reply += F("&nbsp;(Note : Chip Select (CS) config must be done in the plugin)");
 
   reply += F("<TR><TD>SD Card CS Pin:<TD>");
   addPinSelect(false, reply, "sd", Settings.Pin_sd_cs);
 
-  reply += F("<TR><TD>GPIO boot states:<TD>");
+  reply += F("<TR><TD><hr><TD><hr>");
+
+  reply += F("<TR><TD><b>GPIO boot states:</b><TD>");
   reply += F("<TR><TD>Pin mode 0 (D3):<TD>");
   addPinStateSelect(reply, "p0", Settings.PinBootStates[0]);
   reply += F("<TR><TD>Pin mode 2 (D4):<TD>");
@@ -921,6 +927,8 @@ void handle_hardware() {
   addPinStateSelect(reply, "p15", Settings.PinBootStates[15]);
   reply += F("<TR><TD>Pin mode 16 (D0):<TD>");
   addPinStateSelect(reply, "p16", Settings.PinBootStates[16]);
+
+  reply += F("<TR><TD><hr><TD><hr>");
 
   reply += F("<TR><TD><TD><input class=\"button-link\" type='submit' value='Submit'><TR><TD>");
 
@@ -1084,15 +1092,11 @@ void handle_devices() {
         Settings.TaskDeviceSendData[controllerNr][index - 1] = (taskdevicesenddata[controllerNr] == "on");
       }
 
-      if (Device[DeviceIndex].Type == DEVICE_TYPE_SINGLE)
-      {
+      if (taskdevicepin1.length() != 0)
         Settings.TaskDevicePin1[index - 1] = taskdevicepin1.toInt();
-      }
-      if (Device[DeviceIndex].Type == DEVICE_TYPE_DUAL)
-      {
-        Settings.TaskDevicePin1[index - 1] = taskdevicepin1.toInt();
+
+      if (taskdevicepin2.length() != 0)
         Settings.TaskDevicePin2[index - 1] = taskdevicepin2.toInt();
-      }
 
       if (taskdevicepin3.length() != 0)
         Settings.TaskDevicePin3[index - 1] = taskdevicepin3.toInt();
@@ -1339,33 +1343,32 @@ void handle_devices() {
           reply += F("'>");
         }
 
-        if (Device[DeviceIndex].Type == DEVICE_TYPE_SINGLE || Device[DeviceIndex].Type == DEVICE_TYPE_DUAL)
+        if (Device[DeviceIndex].Type >= DEVICE_TYPE_SINGLE && Device[DeviceIndex].Type <= DEVICE_TYPE_TRIPLE)
         {
           reply += F("<TR><TD>1st GPIO:<TD>");
           addPinSelect(false, reply, "taskdevicepin1", Settings.TaskDevicePin1[index - 1]);
         }
-        if (Device[DeviceIndex].Type == DEVICE_TYPE_DUAL)
+        if (Device[DeviceIndex].Type >= DEVICE_TYPE_DUAL && Device[DeviceIndex].Type <= DEVICE_TYPE_TRIPLE)
         {
           reply += F("<TR><TD>2nd GPIO:<TD>");
           addPinSelect(false, reply, "taskdevicepin2", Settings.TaskDevicePin2[index - 1]);
+        }
+        if (Device[DeviceIndex].Type == DEVICE_TYPE_TRIPLE)
+        {
+          reply += F("<TR><TD>3rd GPIO:<TD>");
+          addPinSelect(false, reply, "taskdevicepin3", Settings.TaskDevicePin3[index - 1]);
         }
 
         if (Device[DeviceIndex].PullUpOption)
         {
           reply += F("<TR><TD>Pull UP:<TD>");
-          if (Settings.TaskDevicePin1PullUp[index - 1])
-            reply += F("<input type=checkbox name=taskdevicepin1pullup checked>");
-          else
-            reply += F("<input type=checkbox name=taskdevicepin1pullup>");
+          addCheckBox(reply, F("taskdevicepin1pullup"), Settings.TaskDevicePin1PullUp[index - 1]);
         }
 
         if (Device[DeviceIndex].InverseLogicOption)
         {
           reply += F("<TR><TD>Inversed:<TD>");
-          if (Settings.TaskDevicePin1Inversed[index - 1])
-            reply += F("<input type=checkbox name=taskdevicepin1inversed checked>");
-          else
-            reply += F("<input type=checkbox name=taskdevicepin1inversed>");
+          addCheckBox(reply, F("taskdevicepin1inversed"), Settings.TaskDevicePin1Inversed[index - 1]);
         }
       }
 
@@ -1378,15 +1381,13 @@ void handle_devices() {
         {
           if (Settings.Protocol[controllerNr] != 0)
           {
+            String name = "taskdevicesenddata";
+            name += controllerNr + 1;
+
             reply += F("<TR><TD>Send Data to controller ");
             reply += controllerNr + 1;
-            reply += F("<TD><input type=checkbox name='taskdevicesenddata");
-            reply += controllerNr + 1;
-            reply += F("'");
-            if (Settings.TaskDeviceSendData[controllerNr][index - 1])
-              reply += F(" checked>");
-            else
-              reply += F(">");
+            reply += F("<TD>");
+            addCheckBox(reply, name, Settings.TaskDeviceSendData[controllerNr][index - 1]);
           }
         }
       }
@@ -1394,17 +1395,11 @@ void handle_devices() {
       if (Settings.GlobalSync && Device[DeviceIndex].GlobalSyncOption && Settings.TaskDeviceDataFeed[index - 1] == 0 && Settings.UDPPort != 0)
       {
         reply += F("<TR><TD>Global Sync:<TD>");
-        if (Settings.TaskDeviceGlobalSync[index - 1])
-          reply += F("<input type=checkbox name=taskdeviceglobalsync checked>");
-        else
-          reply += F("<input type=checkbox name=taskdeviceglobalsync>");
+        addCheckBox(reply, F("taskdeviceglobalsync"), Settings.TaskDeviceGlobalSync[index - 1]);
       }
 
       reply += F("<TR><TD>Enabled:<TD>");
-      if (Settings.TaskDeviceEnabled[index - 1])
-        reply += F("<input type=checkbox name=taskdeviceenabled checked>");
-      else
-        reply += F("<input type=checkbox name=taskdeviceenabled>");
+      addCheckBox(reply, F("taskdeviceenabled"), Settings.TaskDeviceEnabled[index - 1]);
 
       if (!Device[DeviceIndex].Custom)
       {
@@ -1720,6 +1715,36 @@ void renderHTMLForPinSelect(String options[], int optionValues[], boolean forI2C
     str += F("</select>");
 
 }
+
+
+//********************************************************************************
+// Add a checkbox
+//********************************************************************************
+void addCheckBox(String& str, String name, boolean checked)
+{
+  str += F("<input type=checkbox id='");
+  str += name;
+  str += F("' name='");
+  str += name;
+  str += F("'");
+  if (checked)
+    str += F(" checked");
+  str += F(">");
+}
+
+
+//********************************************************************************
+// Add a numeric box
+//********************************************************************************
+void addNumericBox(String& str, String name, int value)
+{
+  str += F("<input type='number' name='");
+  str += name;
+  str += F("' size='5' value='");
+  str += value;
+  str += F("'>");
+}
+
 
 //********************************************************************************
 // Add a task select dropdown list
@@ -2269,99 +2294,74 @@ void handle_advanced() {
   reply += F("<TH>Advanced Settings<TH>Value");
 
   reply += F("<TR><TD>MQTT Retain Msg:<TD>");
-  if (Settings.MQTTRetainFlag)
-    reply += F("<input type=checkbox name='mqttretainflag' checked>");
-  else
-    reply += F("<input type=checkbox name='mqttretainflag'>");
+  addCheckBox(reply, F("mqttretainflag"), Settings.MQTTRetainFlag);
 
-  reply += F("<TR><TD>Message Delay (ms):<TD><input type='text' name='messagedelay' value='");
-  reply += Settings.MessageDelay;
+  reply += F("<TR><TD>Message Delay (ms):<TD>");
+  addNumericBox(reply, F("messagedelay"), Settings.MessageDelay);
 
-  reply += F("'><TR><TD>Fixed IP Octet:<TD><input type='text' name='ip' value='");
-  reply += Settings.IP_Octet;
-  reply += F("'>");
+  reply += F("<TR><TD>Fixed IP Octet:<TD><input type='text' name='ip' value='");
+  addNumericBox(reply, F("ip"), Settings.IP_Octet);
 
   reply += F("<TR><TD>Use NTP:<TD>");
-  if (Settings.UseNTP)
-    reply += F("<input type=checkbox name='usentp' checked>");
-  else
-    reply += F("<input type=checkbox name='usentp'>");
+  addCheckBox(reply, F("usentp"), Settings.UseNTP);
 
   reply += F("<TR><TD>NTP Hostname:<TD><input type='text' name='ntphost' size=64 value='");
   reply += Settings.NTPHost;
-
-  reply += F("'><TR><TD>Timezone Offset: (Minutes)<TD><input type='text' name='timezone' size=2 value='");
-  reply += Settings.TimeZone;
   reply += F("'>");
 
+  reply += F("<TR><TD>Timezone Offset: (Minutes)<TD>");
+  addNumericBox(reply, F("timezone"), Settings.TimeZone);
+
   reply += F("<TR><TD>DST:<TD>");
-  if (Settings.DST)
-    reply += F("<input type=checkbox name='dst' checked>");
-  else
-    reply += F("<input type=checkbox name='dst'>");
+  addCheckBox(reply, F("dst"), Settings.DST);
 
   reply += F("<TR><TD>Syslog IP:<TD><input type='text' name='syslogip' value='");
   str[0] = 0;
   sprintf_P(str, PSTR("%u.%u.%u.%u"), Settings.Syslog_IP[0], Settings.Syslog_IP[1], Settings.Syslog_IP[2], Settings.Syslog_IP[3]);
   reply += str;
-
-  reply += F("'><TR><TD>Syslog Level:<TD><input type='text' name='sysloglevel' value='");
-  reply += Settings.SyslogLevel;
-
-  reply += F("'><TR><TD>UDP port:<TD><input type='text' name='udpport' value='");
-  reply += Settings.UDPPort;
   reply += F("'>");
+
+  reply += F("<TR><TD>Syslog Level:<TD>");
+  addNumericBox(reply, F("sysloglevel"), Settings.SyslogLevel);
+
+  reply += F("<TR><TD>UDP port:<TD>");
+  addNumericBox(reply, F("udpport"), Settings.UDPPort);
 
   reply += F("<TR><TD>Enable Serial port:<TD>");
-  if (Settings.UseSerial)
-    reply += F("<input type=checkbox name='useserial' checked>");
-  else
-    reply += F("<input type=checkbox name='useserial'>");
+  addCheckBox(reply, F("useserial"), Settings.UseSerial);
 
-  reply += F("<TR><TD>Serial log Level:<TD><input type='text' name='serialloglevel' value='");
-  reply += Settings.SerialLogLevel;
+  reply += F("<TR><TD>Serial log Level:<TD>");
+  addNumericBox(reply, F("serialloglevel"), Settings.SerialLogLevel);
 
-  reply += F("'><TR><TD>Web log Level:<TD><input type='text' name='webloglevel' value='");
-  reply += Settings.WebLogLevel;
+  reply += F("<TR><TD>Web log Level:<TD>");
+  addNumericBox(reply, F("webloglevel"), Settings.WebLogLevel);
 
-  reply += F("'><TR><TD>SD Card log Level:<TD><input type='text' name='sdloglevel' value='");
-  reply += Settings.SDLogLevel;
+  reply += F("<TR><TD>SD Card log Level:<TD>");
+  addNumericBox(reply, F("sdloglevel"), Settings.SDLogLevel);
 
-  reply += F("'><TR><TD>Baud Rate:<TD><input type='text' name='baudrate' value='");
-  reply += Settings.BaudRate;
-  reply += F("'>");
+  reply += F("<TR><TD>Baud Rate:<TD>");
+  addNumericBox(reply, F("baudrate"), Settings.BaudRate);
 
-  reply += F("<TR><TD>WD I2C Address:<TD><input type='text' name='wdi2caddress' value='");
-  reply += Settings.WDI2CAddress;
-  reply += F("'>");
+  reply += F("<TR><TD>WD I2C Address:<TD>");
+  addNumericBox(reply, F("wdi2caddress"), Settings.WDI2CAddress);
+  reply += F(" (decimal)");
 
   reply += F("<TR><TD>Use SSDP:<TD>");
-  if (Settings.UseSSDP)
-    reply += F("<input type=checkbox name='usessdp' checked>");
-  else
-    reply += F("<input type=checkbox name='usessdp'>");
+  addCheckBox(reply, F("usessdp"), Settings.UseSSDP);
 
-  reply += F("<TR><TD>Connection Failure Threshold:<TD><input type='text' name='cft' value='");
-  reply += Settings.ConnectionFailuresThreshold;
-  reply += F("'>");
+  reply += F("<TR><TD>Connection Failure Threshold:<TD>");
+  addNumericBox(reply, F("cft"), Settings.ConnectionFailuresThreshold);
 
   reply += F("<TR><TD>Rules:<TD>");
-  if (Settings.UseRules)
-    reply += F("<input type=checkbox name='userules' checked>");
-  else
-    reply += F("<input type=checkbox name='userules'>");
+  addCheckBox(reply, F("userules"), Settings.UseRules);
 
   reply += F("<TR><TH>Experimental Settings<TH>Value");
 
-  reply += F("<TR><TD>I2C ClockStretchLimit:<TD><input type='text' name='wireclockstretchlimit' value='");
-  reply += Settings.WireClockStretchLimit;
-  reply += F("'>");
+  reply += F("<TR><TD>I2C ClockStretchLimit:<TD>");
+  addNumericBox(reply, F("wireclockstretchlimit"), Settings.WireClockStretchLimit);
 
   reply += F("<TR><TD>Global Sync:<TD>");
-  if (Settings.GlobalSync)
-    reply += F("<input type=checkbox name='globalsync' checked>");
-  else
-    reply += F("<input type=checkbox name='globalsync'>");
+  addCheckBox(reply, F("globalsync"), Settings.GlobalSync);
 
   reply += F("<TR><TD><TD><input class=\"button-link\" type='submit' value='Submit'>");
   reply += F("<input type='hidden' name='edit' value='1'>");
@@ -2928,7 +2928,11 @@ void handle_rules() {
     {
       reply += F("<TR><TD><textarea name='rules' rows='15' cols='80' wrap='off'>");
       while (f.available())
-        reply += (char)f.read();
+      {
+        String c((char)f.read());
+        htmlEscape(c);
+        reply += c;
+      }
       reply += F("</textarea>");
     }
   }
