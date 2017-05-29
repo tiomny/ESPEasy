@@ -49,7 +49,8 @@ boolean CPlugin_011(byte function, struct EventStruct *event, String& string)
         String escapeBuffer;
 
         P011_ConfigStruct customConfig;
-        LoadCustomControllerSettings((byte*)&customConfig, sizeof(customConfig));
+
+        LoadCustomControllerSettings(event->ControllerIndex,(byte*)&customConfig, sizeof(customConfig));
         String methods[] = { F("GET"), F("POST"), F("PUT"), F("HEAD"), F("PATCH") };
         string += F("<TR><TD>HTTP Method :<TD><select name='P011httpmethod'>");
         for (byte i = 0; i < 5; i++)
@@ -95,11 +96,12 @@ boolean CPlugin_011(byte function, struct EventStruct *event, String& string)
         String httpuri = WebServer.arg(F("P011httpuri"));
         String httpheader = WebServer.arg(F("P011httpheader"));
         String httpbody = WebServer.arg(F("P011httpbody"));
+
         strlcpy(customConfig.HttpMethod, httpmethod.c_str(), sizeof(customConfig.HttpMethod));
         strlcpy(customConfig.HttpUri, httpuri.c_str(), sizeof(customConfig.HttpUri));
         strlcpy(customConfig.HttpHeader, httpheader.c_str(), sizeof(customConfig.HttpHeader));
         strlcpy(customConfig.HttpBody, httpbody.c_str(), sizeof(customConfig.HttpBody));
-        SaveCustomControllerSettings((byte*)&customConfig, sizeof(customConfig));
+        SaveCustomControllerSettings(event->ControllerIndex,(byte*)&customConfig, sizeof(customConfig));
         break;
       }
 
@@ -134,23 +136,18 @@ boolean HTTPSend011(struct EventStruct *event)
   }
 
   P011_ConfigStruct customConfig;
-  LoadCustomControllerSettings((byte*)&customConfig, sizeof(customConfig));
+  LoadCustomControllerSettings(event->ControllerIndex,(byte*)&customConfig, sizeof(customConfig));
 
-  // char log[80];
   boolean success = false;
-  // char host[20];
-  IPAddress host(ControllerSettings.IP[0], ControllerSettings.IP[1], ControllerSettings.IP[2], ControllerSettings.IP[3]);
-  // sprintf_P(host, PSTR("%u.%u.%u.%u"), ControllerSettings.IP[0], ControllerSettings.IP[1], ControllerSettings.IP[2], ControllerSettings.IP[3]);
-  // char tmp[22];
-  // strcpy_P(tmp, PSTR("HTTP : connecting to "));
-  // sprintf_P(log, PSTR("%s%s using port %u"), tmp, host, ControllerSettings.Port);
-  // addLog(LOG_LEVEL_DEBUG, log);
 
-  addLog(LOG_LEVEL_DEBUG, String(F("HTTP : connecting to "))+host.toString()+":"+ControllerSettings.Port);
+  IPAddress host(ControllerSettings.IP[0], ControllerSettings.IP[1], ControllerSettings.IP[2], ControllerSettings.IP[3]);
+
+  addLog(LOG_LEVEL_DEBUG, String(F("HTTP : connecting to "))+
+  		(ControllerSettings.UseDNS ? ControllerSettings.HostName : host.toString() ) +":"+ControllerSettings.Port);
 
   // Use WiFiClient class to create TCP connections
   WiFiClient client;
-   if (!client.connect(host, ControllerSettings.Port))
+   if (ControllerSettings.UseDNS ? !client.connect(ControllerSettings.HostName, ControllerSettings.Port) : !client.connect(host, ControllerSettings.Port))
   {
     connectionFailures++;
     addLog(LOG_LEVEL_ERROR, F("HTTP : connection failed"));
@@ -186,7 +183,7 @@ boolean HTTPSend011(struct EventStruct *event)
     ReplaceTokenByValue(body, event);
     payload += F("\r\nContent-Length: ");
     payload += String(body.length());
-    payload += F("\r\n");
+    payload += F("\r\n\r\n");
     payload += body;
   }
   payload += F("\r\n");
@@ -311,15 +308,8 @@ void ReplaceTokenByValue(String& s, struct EventStruct *event)
 	addLog(LOG_LEVEL_DEBUG_MORE, s);
 
   //NOTE: cant we just call parseTemplate() for all the standard stuff??
-  String strTime = "";
-  if (hour() < 10)
-    strTime += F(" ");
-  strTime += hour();
-  strTime += F(":");
-  if (minute() < 10)
-    strTime += F("0");
-  strTime += minute();
-  s.replace(F("%systime%"), strTime);
+
+  s.replace(F("%systime%"), getTimeString(':'));
 
 	#if FEATURE_ADC_VCC
 		newString.replace(F("%vcc%"), String(vcc));

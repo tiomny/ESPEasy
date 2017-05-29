@@ -75,27 +75,20 @@ boolean Plugin_047(byte function, struct EventStruct *event, String& string)
 
     case PLUGIN_WEBFORM_LOAD:
       {
-        string += F("<TR><TD>I2C Address (Hex): <TD><input type='text' title='Set i2c Address of sensor' name='");
-        string += F("plugin_047_i2cSoilMoisture_i2cAddress' value='0x");
-        string += String(Settings.TaskDevicePluginConfig[event->TaskIndex][0],HEX);
-        string += F("'>");
+      	addFormTextBox(string, F("I2C Address (Hex)"), F("plugin_047_i2cSoilMoisture_i2cAddress"), String(F("0x")) +
+      			String(Settings.TaskDevicePluginConfig[event->TaskIndex][0],HEX), 4);
 
-        string += F("<TR><TD>Send sensor to sleep:<TD>");
-        addCheckBox(string, F("plugin_047_sleep"), Settings.TaskDevicePluginConfig[event->TaskIndex][1]);
+        addFormCheckBox(string, F("Send sensor to sleep"), F("plugin_047_sleep"), Settings.TaskDevicePluginConfig[event->TaskIndex][1]);
 
-        string += F("<TR><TD>Check sensor version:<TD>");
-        addCheckBox(string, F("plugin_047_version"), Settings.TaskDevicePluginConfig[event->TaskIndex][2]);
+        addFormCheckBox(string, F("Check sensor version") ,F("plugin_047_version"), Settings.TaskDevicePluginConfig[event->TaskIndex][2]);
 
-        string += F("<TR><TD><hr><TD><hr>");
-        string += F("<TR><TD>Change Sensor address:<TD>");
-        addCheckBox(string, F("plugin_047_changeAddr"), false);
+        addFormSeparator(string);
 
-        string += F("<TR><TD>Change I2C Addr. to (Hex): <TD><input type='text' title='Set new i2c Address of sensor' name='");
-        string += F("plugin_047_i2cSoilMoisture_changeAddr' value='0x");
-        string += String(Settings.TaskDevicePluginConfig[event->TaskIndex][0],HEX);
-        string += F("'>");
-        string += F("<TR><TD><hr><TD><hr>");
+        addFormCheckBox(string, F("Change Sensor address"),F("plugin_047_changeAddr"), false);
+      	addFormTextBox(string, F("Change I2C Addr. to (Hex)"), F("plugin_047_i2cSoilMoisture_changeAddr"), String(F("0x")) +
+      			String(Settings.TaskDevicePluginConfig[event->TaskIndex][0],HEX), 4);
 
+        addFormSeparator(string);
 
         success = true;
         break;
@@ -106,17 +99,14 @@ boolean Plugin_047(byte function, struct EventStruct *event, String& string)
         String plugin1 = WebServer.arg(F("plugin_047_i2cSoilMoisture_i2cAddress"));
         Settings.TaskDevicePluginConfig[event->TaskIndex][0] = (int) strtol(plugin1.c_str(), 0, 16);
 
-        String plugin2 = WebServer.arg(F("plugin_047_sleep"));
-        Settings.TaskDevicePluginConfig[event->TaskIndex][1] = (plugin2 == F("on"));
+        Settings.TaskDevicePluginConfig[event->TaskIndex][1] = isFormItemChecked(F("plugin_047_sleep"));
 
-        String plugin3 = WebServer.arg(F("plugin_047_version"));
-        Settings.TaskDevicePluginConfig[event->TaskIndex][2] = (plugin3 == F("on"));
+        Settings.TaskDevicePluginConfig[event->TaskIndex][2] = isFormItemChecked(F("plugin_047_version"));
 
         String plugin4 = WebServer.arg(F("plugin_047_i2cSoilMoisture_changeAddr"));
         Settings.TaskDevicePluginConfig[event->TaskIndex][3] = (int) strtol(plugin4.c_str(), 0, 16);
 
-        String plugin5 = WebServer.arg(F("plugin_047_changeAddr"));
-        Settings.TaskDevicePluginConfig[event->TaskIndex][4] = (plugin5 == F("on"));
+        Settings.TaskDevicePluginConfig[event->TaskIndex][4] = isFormItemChecked(F("plugin_047_changeAddr"));
         success = true;
         break;
       }
