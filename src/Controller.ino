@@ -1,7 +1,7 @@
 //********************************************************************************
 // Interface for Sending to Controllers
 //********************************************************************************
-boolean sendData(struct EventStruct *event)
+void sendData(struct EventStruct *event)
 {
   LoadTaskSettings(event->TaskIndex);
   if (Settings.UseRules)
@@ -9,6 +9,9 @@ boolean sendData(struct EventStruct *event)
 
   if (Settings.GlobalSync && Settings.TaskDeviceGlobalSync[event->TaskIndex])
     SendUDPTaskData(0, event->TaskIndex, event->TaskIndex);
+
+  if (Settings.UseValueLogger && Settings.InitSPI && Settings.Pin_sd_cs >= 0)
+    SendValueLogger(event->TaskIndex);
 
 //  if (!Settings.TaskDeviceSendData[event->TaskIndex])
 //    return false;
@@ -154,6 +157,7 @@ void MQTTCheck()
 {
   byte ProtocolIndex = getProtocolIndex(Settings.Protocol[0]);
   if (Protocol[ProtocolIndex].usesMQTT)
+  {
     if (!MQTTclient.connected())
     {
       String log = F("MQTT : Connection lost");
@@ -165,6 +169,7 @@ void MQTTCheck()
     }
     else if (connectionFailures)
       connectionFailures--;
+  }
 }
 
 

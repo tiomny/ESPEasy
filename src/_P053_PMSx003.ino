@@ -14,7 +14,7 @@
 
 #define PLUGIN_053
 #define PLUGIN_ID_053 53
-#define PLUGIN_NAME_053 "Particle Sensor - PMSx003"
+#define PLUGIN_NAME_053 "Dust Sensor - PMSx003"
 #define PLUGIN_VALUENAME1_053 "pm1.0"
 #define PLUGIN_VALUENAME2_053 "pm2.5"
 #define PLUGIN_VALUENAME3_053 "pm10"
@@ -139,6 +139,14 @@ boolean Plugin_053(byte function, struct EventStruct *event, String& string)
         break;
       }
 
+      case PLUGIN_GET_DEVICEGPIONAMES:
+        {
+          event->String1 = F("GPIO &larr; TX");
+          event->String2 = F("GPIO &rarr; RX");
+          event->String3 = F("GPIO &rarr; Reset");
+          break;
+        }
+
     case PLUGIN_INIT:
       {
         int rxPin = Settings.TaskDevicePin1[event->TaskIndex];
@@ -194,7 +202,7 @@ boolean Plugin_053(byte function, struct EventStruct *event, String& string)
           uint16_t checksum = 0, checksum2 = 0;
           uint16_t framelength = 0;
           uint16_t data[13];
-          byte data_low, data_high;
+          // byte data_low, data_high;
           int i = 0;
 
           // Check if a packet is available in the UART FIFO.

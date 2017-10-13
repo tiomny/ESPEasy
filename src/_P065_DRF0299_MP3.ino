@@ -74,6 +74,12 @@ boolean Plugin_065(byte function, struct EventStruct *event, String& string)
         break;
       }
 
+      case PLUGIN_GET_DEVICEGPIONAMES:
+        {
+          event->String1 = F("GPIO &rarr; RX");
+          break;
+        }
+
     case PLUGIN_WEBFORM_LOAD:
       {
           addFormNumericBox(string, F("Volume"), F("volume"), CONFIG(0), 1, 30);
@@ -92,8 +98,14 @@ boolean Plugin_065(byte function, struct EventStruct *event, String& string)
 
     case PLUGIN_INIT:
       {
+        #pragma GCC diagnostic push
+        //note: we cant fix this, its a upstream bug.
+        #pragma GCC diagnostic warning "-Wdelete-non-virtual-dtor"
         if (Plugin_065_SoftSerial)
           delete Plugin_065_SoftSerial;
+        #pragma GCC diagnostic pop
+
+
         Plugin_065_SoftSerial = new SoftwareSerial(-1, PIN(0));   // no RX, only TX
 
         Plugin_065_SoftSerial->begin(9600);
@@ -141,6 +153,7 @@ boolean Plugin_065(byte function, struct EventStruct *event, String& string)
 
           int8_t vol = param.toInt();
           if (vol == 0) vol = 30;
+          CONFIG(0) = vol;
           Plugin_065_SetVol(vol);
           log += vol;
 
