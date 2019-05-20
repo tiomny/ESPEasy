@@ -1,3 +1,4 @@
+#ifdef USES_P039
 //#######################################################################################################
 //######################## Plugin 039: Thermocouple (MAX6675 / MAX31855) ################################
 //#######################################################################################################
@@ -9,15 +10,15 @@
 // MAX6675 or MAX31855 in order to read the values. Take a look at ebay to find such boards :-)
 // You can only use ESP8266 boards which expose the SPI Interface. This Plugin uses only the Hardware
 // SPI Interface - no software SPI at the moment.
-// But neverless you need at least 3 Pins to use SPI. So using an very simple ESP-01 is no option - Sorry.
-// The Wiring ist straight forward ...
+// But nevertheless you need at least 3 Pins to use SPI. So using an very simple ESP-01 is no option - Sorry.
+// The Wiring is straight forward ...
 //
 // If you like to send suggestions feel free to send me an email : dominik@logview.info
 // Have fun ... Dominik
 
 // Wiring
 // https://de.wikipedia.org/wiki/Serial_Peripheral_Interface
-// You need an ESP8266 device with accessable SPI Pins. These are:
+// You need an ESP8266 device with accessible SPI Pins. These are:
 // Name   Description     GPIO      NodeMCU   Notes
 // MOSI   Master Output   GPIO13    D7        Not used (No Data sending to MAX)
 // MISO   Master Input    GPIO12    D6        Hardware SPI
@@ -42,6 +43,7 @@
 
 uint8_t Plugin_039_SPI_CS_Pin = 15;  // D8
 bool Plugin_039_SensorAttached = true;
+uint32_t Plugin_039_Sensor_fault = 0;
 double Plugin_039_Celsius = 0.0;
 
 boolean Plugin_039(byte function, struct EventStruct *event, String& string)
@@ -78,14 +80,20 @@ boolean Plugin_039(byte function, struct EventStruct *event, String& string)
         break;
       }
 
+    case PLUGIN_GET_DEVICEGPIONAMES:
+      {
+        event->String1 = formatGpioName_output(F("CS"));
+        break;
+      }
+
     case PLUGIN_INIT:
       {
         // Get CS Pin
         // If no Pin is in Config we use 15 as default -> Hardware Chip Select on ESP8266
-        if (Settings.TaskDevicePin1[event->TaskIndex] != 0)
+        if (CONFIG_PIN1 != 0)
         {
           // Konvert the GPIO Pin to a Dogotal Puin Number first ...
-          Plugin_039_SPI_CS_Pin = Settings.TaskDevicePin1[event->TaskIndex];
+          Plugin_039_SPI_CS_Pin = CONFIG_PIN1;
         }
 
         // set the slaveSelectPin as an output:
@@ -102,16 +110,16 @@ boolean Plugin_039(byte function, struct EventStruct *event, String& string)
 
     case PLUGIN_WEBFORM_LOAD:
       {
-        addFormNote(string, F("<b>1st GPIO</b> = CS (Usable GPIOs : 0, 2, 4, 5, 15)"));
-        //string += F("<TR><TD>Info GPIO:<TD><b>1st GPIO</b> = CS (Usable GPIOs : 0, 2, 4, 5, 15)");
+        addFormNote(F("<b>1st GPIO</b> = CS (Usable GPIOs : 0, 2, 4, 5, 15)"));
+        //addHtml(F("<TR><TD>Info GPIO:<TD><b>1st GPIO</b> = CS (Usable GPIOs : 0, 2, 4, 5, 15)"));
 
-        byte choice = Settings.TaskDevicePluginConfig[event->TaskIndex][0];
+        byte choice = PCONFIG(0);
         String options[2];
         options[0] = F("MAX 6675");
         options[1] = F("MAX 31855");
         //options[2] = F("MAX 31865");
         int optionValues[2] = { 1, 2 };
-        addFormSelector(string, F("Adapter IC"), F("plugin_039_maxtype"), 2, options, optionValues, choice);
+        addFormSelector(F("Adapter IC"), F("p039_maxtype"), 2, options, optionValues, choice);
 
         success = true;
         break;
@@ -119,7 +127,7 @@ boolean Plugin_039(byte function, struct EventStruct *event, String& string)
 
     case PLUGIN_WEBFORM_SAVE:
       {
-        Settings.TaskDevicePluginConfig[event->TaskIndex][0] = getFormItemInt(F("plugin_039_maxtype"));
+        PCONFIG(0) = getFormItemInt(F("p039_maxtype"));
         success = true;
         break;
       }
@@ -128,11 +136,11 @@ boolean Plugin_039(byte function, struct EventStruct *event, String& string)
       {
         // Get the MAX Type (6675 / 31855)
         // TBD ... Auswertung je nach Chip !!!
-        byte MaxType = Settings.TaskDevicePluginConfig[event->TaskIndex][0];
+        byte MaxType = PCONFIG(0);
 
         // Get CS Pin
         // Konvert the GPIO Pin to a Dogotal Puin Number first ...
-        Plugin_039_SPI_CS_Pin = Settings.TaskDevicePin1[event->TaskIndex];
+        Plugin_039_SPI_CS_Pin = CONFIG_PIN1;
 
         switch (MaxType) {
           case 1:       // MAX6675
@@ -231,9 +239,28 @@ double readMax31855()
   log += String(rawvalue);
   addLog(LOG_LEVEL_DEBUG, log);
 
+  if (Plugin_039_Sensor_fault != (rawvalue & 0x7)) {
+    // Fault code changed, log them
+    Plugin_039_Sensor_fault = (rawvalue & 0x7);
+    log = F("P039 : MAX31855");
+    if (Plugin_039_Sensor_fault == 0) {
+      log += F("Fault resolved");
+    } else {
+      log += F("Fault code:");
+      if (rawvalue & 0x01) {
+        log += F(" Open (no connection)");
+      }
+      if (rawvalue & 0x02) {
+        log += F(" Short-circuit to GND");
+      }
+      if (rawvalue & 0x04) {
+        log += F(" Short-circuit to Vcc");
+      }
+    }
+    addLog(LOG_LEVEL_DEBUG, log);
+  }
   // D16 - This bit reads at 1 when any of the SCV, SCG, or OC faults are active. Default value is 0.
   Plugin_039_SensorAttached = !(rawvalue & 0x00010000);
-
   if (Plugin_039_SensorAttached)
   {
     // Data is D[31:18]
@@ -246,19 +273,27 @@ double readMax31855()
     //   -0.25    1111 1111 1111 11
     //   -1.00    1111 1111 1111 00
     // -250.00    1111 0000 0110 00
-    if (rawvalue & 0x2000) // Bit 31=1 -> neg Values
-    {
-      // Negate all Bits
-      rawvalue = ~rawvalue;
-      // Add 1 and make negative
-      rawvalue = (rawvalue + 1) * -1;
-    }
-
+    // We're left with (32 - 18 =) 14 bits
+    int temperature = Plugin_039_convert_two_complement(rawvalue, 14);
     // Calculate Celsius
-    return rawvalue * 0.25;
+    return temperature * 0.25;
   }
   else
   {
+    // Fault state, thus output no value.
     return NAN;
   }
 }
+
+int Plugin_039_convert_two_complement(uint32_t value, int nr_bits) {
+  const bool negative = (value & (1 << (nr_bits - 1))) != 0;
+  int nativeInt;
+  if (negative) {
+    // Add zeroes to the left to create the proper negative native-sized integer.
+    nativeInt = value | ~((1 << nr_bits) - 1);
+  } else {
+    nativeInt = value;
+  }
+  return nativeInt;
+}
+#endif // USES_P039

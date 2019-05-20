@@ -1,3 +1,4 @@
+#ifdef USES_P014
 //#######################################################################################################
 //######################## Plugin 014 SI7021 I2C Temperature Humidity Sensor  ###########################
 //#######################################################################################################
@@ -74,7 +75,7 @@ boolean Plugin_014(byte function, struct EventStruct *event, String& string)
       {
         #define SI7021_RESOLUTION_OPTION 4
 
-        byte choice = Settings.TaskDevicePluginConfig[event->TaskIndex][0];
+        byte choice = PCONFIG(0);
         String options[SI7021_RESOLUTION_OPTION];
         int optionValues[SI7021_RESOLUTION_OPTION];
         optionValues[0] = SI7021_RESOLUTION_14T_12RH;
@@ -85,8 +86,8 @@ boolean Plugin_014(byte function, struct EventStruct *event, String& string)
         options[2] = F("Temp 12 bits / RH  8 bits");
         optionValues[3] = SI7021_RESOLUTION_11T_11RH;
         options[3] = F("Temp 11 bits / RH 11 bits");
-        addFormSelector(string, F("Resolution"), F("plugin_014_res"), SI7021_RESOLUTION_OPTION, options, optionValues, choice);
-        //addUnit(string, F("bits"));
+        addFormSelector(F("Resolution"), F("p014_res"), SI7021_RESOLUTION_OPTION, options, optionValues, choice);
+        //addUnit(F("bits"));
 
         success = true;
         break;
@@ -94,7 +95,7 @@ boolean Plugin_014(byte function, struct EventStruct *event, String& string)
 
     case PLUGIN_WEBFORM_SAVE:
       {
-        Settings.TaskDevicePluginConfig[event->TaskIndex][0] = getFormItemInt(F("plugin_014_res"));
+        PCONFIG(0) = getFormItemInt(F("p014_res"));
         Plugin_014_init = false; // Force device setup next time
         success = true;
         break;
@@ -103,7 +104,7 @@ boolean Plugin_014(byte function, struct EventStruct *event, String& string)
     case PLUGIN_READ:
       {
         // Get sensor resolution configuration
-        uint8_t res = Settings.TaskDevicePluginConfig[event->TaskIndex][0];
+        uint8_t res = PCONFIG(0);
 
         if (!Plugin_014_init) {
           Plugin_014_init = Plugin_014_si7021_begin(res);
@@ -393,3 +394,4 @@ int8_t Plugin_014_si7021_setResolution(uint8_t res)
 
   return error;
 }
+#endif // USES_P014

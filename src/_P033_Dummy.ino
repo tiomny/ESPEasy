@@ -1,3 +1,4 @@
+#ifdef USES_P033
 //#######################################################################################################
 //#################################### Plugin 033: Dummy ################################################
 //#######################################################################################################
@@ -44,7 +45,7 @@ boolean Plugin_033(byte function, struct EventStruct *event, String& string)
 
     case PLUGIN_WEBFORM_LOAD:
       {
-        byte choice = Settings.TaskDevicePluginConfig[event->TaskIndex][0];
+        byte choice = PCONFIG(0);
         String options[11];
         options[0] = F("SENSOR_TYPE_SINGLE");
         options[1] = F("SENSOR_TYPE_TEMP_HUM");
@@ -70,7 +71,7 @@ boolean Plugin_033(byte function, struct EventStruct *event, String& string)
         optionValues[9] = SENSOR_TYPE_LONG;
         optionValues[10] = SENSOR_TYPE_WIND;
 
-        addFormSelector(string, F("Simulate Data Type"), F("plugin_033_sensortype"), 11, options, optionValues, choice );
+        addFormSelector(F("Simulate Data Type"), F("p033_sensortype"), 11, options, optionValues, choice );
 
         success = true;
         break;
@@ -78,14 +79,14 @@ boolean Plugin_033(byte function, struct EventStruct *event, String& string)
 
     case PLUGIN_WEBFORM_SAVE:
       {
-        Settings.TaskDevicePluginConfig[event->TaskIndex][0] = getFormItemInt(F("plugin_033_sensortype"));
+        PCONFIG(0) = getFormItemInt(F("p033_sensortype"));
         success = true;
         break;
       }
 
     case PLUGIN_READ:
       {
-        event->sensorType = Settings.TaskDevicePluginConfig[event->TaskIndex][0];
+        event->sensorType = PCONFIG(0);
         for (byte x=0; x<4;x++)
         {
           String log = F("Dummy: value ");
@@ -97,6 +98,47 @@ boolean Plugin_033(byte function, struct EventStruct *event, String& string)
         success = true;
         break;
       }
+
+    case PLUGIN_WRITE:
+      {
+        String command = parseString(string, 1);
+        if (command == F("dummyvalueset"))
+        {
+          if (event->Par1 == event->TaskIndex+1) // make sure that this instance is the target
+          {
+            float floatValue=0;
+            if (string2float(parseString(string, 4),floatValue))
+            {
+              if (loglevelActiveFor(LOG_LEVEL_INFO))
+              {
+                String log = F("Dummy: Index ");
+                log += event->Par1;
+                log += F(" value ");
+                log += event->Par2;
+                log += F(" set to ");
+                log += floatValue;
+                addLog(LOG_LEVEL_INFO,log);
+              }
+              UserVar[event->BaseVarIndex+event->Par2-1]=floatValue;
+              success = true;
+            } else { // float conversion failed!
+              if (loglevelActiveFor(LOG_LEVEL_ERROR))
+              {
+                String log = F("Dummy: Index ");
+                log += event->Par1;
+                log += F(" value ");
+                log += event->Par2;
+                log += F(" parameter3: ");
+                log += parseString(string, 4);
+                log += F(" not a float value!");
+                addLog(LOG_LEVEL_ERROR,log);
+              }
+            }
+          }
+        }
+        break;
+      }
   }
   return success;
 }
+#endif // USES_P033

@@ -1,3 +1,4 @@
+#ifdef USES_C006
 //#######################################################################################################
 //########################### Controller Plugin 006: PiDome MQTT ########################################
 //#######################################################################################################
@@ -6,9 +7,9 @@
 #define CPLUGIN_ID_006         6
 #define CPLUGIN_NAME_006       "PiDome MQTT"
 
-boolean CPlugin_006(byte function, struct EventStruct *event, String& string)
+bool CPlugin_006(byte function, struct EventStruct *event, String& string)
 {
-  boolean success = false;
+  bool success = false;
 
   switch (function)
   {
@@ -27,6 +28,14 @@ boolean CPlugin_006(byte function, struct EventStruct *event, String& string)
     case CPLUGIN_GET_DEVICENAME:
       {
         string = F(CPLUGIN_NAME_006);
+        break;
+      }
+
+    case CPLUGIN_INIT:
+      {
+        MakeControllerSettings(ControllerSettings);
+        LoadControllerSettings(event->ControllerIndex, ControllerSettings);
+        MQTTDelayHandler.configureControllerSettings(ControllerSettings);
         break;
       }
 
@@ -57,6 +66,7 @@ boolean CPlugin_006(byte function, struct EventStruct *event, String& string)
         String name = topicSplit[4];
         String cmd = topicSplit[5];
         struct EventStruct TempEvent;
+        TempEvent.TaskIndex = event->TaskIndex;
         TempEvent.Par1 = topicSplit[6].toInt();
         TempEvent.Par2 = 0;
         TempEvent.Par3 = 0;
@@ -76,18 +86,20 @@ boolean CPlugin_006(byte function, struct EventStruct *event, String& string)
 
     case CPLUGIN_PROTOCOL_SEND:
       {
-        ControllerSettingsStruct ControllerSettings;
-        LoadControllerSettings(event->ControllerIndex, (byte*)&ControllerSettings, sizeof(ControllerSettings));
+        if (!WiFiConnected(10)) {
+          success = false;
+          break;
+        }
+        MakeControllerSettings(ControllerSettings);
+        LoadControllerSettings(event->ControllerIndex, ControllerSettings);
 
         statusLED(true);
 
-        if (ExtraTaskSettings.TaskDeviceValueNames[0][0] == 0)
+        if (ExtraTaskSettings.TaskIndex != event->TaskIndex)
           PluginCall(PLUGIN_GET_DEVICEVALUENAMES, event, dummyString);
 
         String pubname = ControllerSettings.Publish;
-        pubname.replace(F("%sysname%"), Settings.Name);
-        pubname.replace(F("%tskname%"), ExtraTaskSettings.TaskDeviceName);
-        pubname.replace(F("%id%"), String(event->idx));
+        parseControllerVariables(pubname, event, false);
 
         String value = "";
         // byte DeviceIndex = getDeviceIndex(Settings.TaskDeviceNumber[event->TaskIndex]);
@@ -96,14 +108,20 @@ boolean CPlugin_006(byte function, struct EventStruct *event, String& string)
         {
           String tmppubname = pubname;
           tmppubname.replace(F("%valname%"), ExtraTaskSettings.TaskDeviceValueNames[x]);
-          if (event->sensorType == SENSOR_TYPE_LONG)
-            value = (unsigned long)UserVar[event->BaseVarIndex] + ((unsigned long)UserVar[event->BaseVarIndex + 1] << 16);
-          else
-            value = toString(UserVar[event->BaseVarIndex + x], ExtraTaskSettings.TaskDeviceValueDecimals[x]);
-          MQTTclient.publish(tmppubname.c_str(), value.c_str(), Settings.MQTTRetainFlag);
+          value = formatUserVarNoCheck(event, x);
+          MQTTpublish(event->ControllerIndex, tmppubname.c_str(), value.c_str(), Settings.MQTTRetainFlag);
         }
         break;
       }
+
+    case CPLUGIN_FLUSH:
+      {
+        processMQTTdelayQueue();
+        delay(0);
+        break;
+      }
+
   }
   return success;
 }
+#endif

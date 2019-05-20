@@ -1,3 +1,4 @@
+#ifdef USES_P069
 //#######################################################################################################
 //########################### Plugin 69: LM75A Temperature Sensor (I2C) #################################
 //#######################################################################################################
@@ -9,11 +10,10 @@
 //########################## Adapted to ESPEasy 2.0 by Jochen Krapf #####################################
 //#######################################################################################################
 
-#ifdef PLUGIN_BUILD_TESTING
 
 #define PLUGIN_069
 #define PLUGIN_ID_069         69
-#define PLUGIN_NAME_069       "Environment - LM75A [TESTING]"
+#define PLUGIN_NAME_069       "Environment - LM75A"
 #define PLUGIN_VALUENAME1_069 "Temperature"
 
 
@@ -106,9 +106,6 @@ private:
 
 #endif
 
-#ifndef CONFIG
-#define CONFIG(n) (Settings.TaskDevicePluginConfig[event->TaskIndex][n])
-#endif
 
 LM75A* PLUGIN_069_LM75A = NULL;
 
@@ -150,7 +147,7 @@ boolean Plugin_069(byte function, struct EventStruct *event, String& string)
     case PLUGIN_WEBFORM_LOAD:
     {
       int optionValues[8] = { 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F };
-      addFormSelectorI2C(string, F("i2c_addr"), 8, optionValues, CONFIG(0));
+      addFormSelectorI2C(F("i2c_addr"), 8, optionValues, PCONFIG(0));
 
       success = true;
       break;
@@ -158,7 +155,7 @@ boolean Plugin_069(byte function, struct EventStruct *event, String& string)
 
     case PLUGIN_WEBFORM_SAVE:
     {
-      CONFIG(0) = getFormItemInt(F("i2c_addr"));
+      PCONFIG(0) = getFormItemInt(F("i2c_addr"));
 
       success = true;
       break;
@@ -168,7 +165,7 @@ boolean Plugin_069(byte function, struct EventStruct *event, String& string)
     {
       if (PLUGIN_069_LM75A)
         delete PLUGIN_069_LM75A;
-      PLUGIN_069_LM75A = new LM75A((uint8_t)CONFIG(0));
+      PLUGIN_069_LM75A = new LM75A((uint8_t)PCONFIG(0));
 
       success = true;
       break;
@@ -201,4 +198,4 @@ boolean Plugin_069(byte function, struct EventStruct *event, String& string)
   return success;
 }
 
-#endif
+#endif // USES_P069

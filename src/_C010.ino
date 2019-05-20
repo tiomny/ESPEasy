@@ -1,3 +1,4 @@
+#ifdef USES_C010
 //#######################################################################################################
 //########################### Controller Plugin 010: Generic UDP ########################################
 //#######################################################################################################
@@ -6,9 +7,9 @@
 #define CPLUGIN_ID_010         10
 #define CPLUGIN_NAME_010       "Generic UDP"
 
-boolean CPlugin_010(byte function, struct EventStruct *event, String& string)
+bool CPlugin_010(byte function, struct EventStruct *event, String& string)
 {
-  boolean success = false;
+  bool success = false;
 
   switch (function)
   {
@@ -40,22 +41,38 @@ boolean CPlugin_010(byte function, struct EventStruct *event, String& string)
     case CPLUGIN_PROTOCOL_SEND:
       {
         byte valueCount = getValueCountFromSensorType(event->sensorType);
+        C010_queue_element element(event, valueCount);
+        if (ExtraTaskSettings.TaskIndex != event->TaskIndex)
+          PluginCall(PLUGIN_GET_DEVICEVALUENAMES, event, dummyString);
+
+        MakeControllerSettings(ControllerSettings);
+        LoadControllerSettings(event->ControllerIndex, ControllerSettings);
+
         for (byte x = 0; x < valueCount; x++)
         {
-          if (event->sensorType == SENSOR_TYPE_LONG)
-            C010_Send(event, 0, 0, (unsigned long)UserVar[event->BaseVarIndex] + ((unsigned long)UserVar[event->BaseVarIndex + 1] << 16));
-          else
-            C010_Send(event, x, UserVar[event->BaseVarIndex + x], 0);
-          if (valueCount > 1)
-          {
-            delayBackground(Settings.MessageDelay);
-            // unsigned long timer = millis() + Settings.MessageDelay;
-            // while (millis() < timer)
-            //   backgroundtasks();
+          bool isvalid;
+          String formattedValue = formatUserVar(event, x, isvalid);
+          if (isvalid) {
+            element.txt[x] = "";
+            element.txt[x] += ControllerSettings.Publish;
+            parseControllerVariables(element.txt[x], event, false);
+            element.txt[x].replace(F("%valname%"), ExtraTaskSettings.TaskDeviceValueNames[x]);
+            element.txt[x].replace(F("%value%"), formattedValue);
+            addLog(LOG_LEVEL_DEBUG_MORE, element.txt[x]);
           }
         }
+        success = C010_DelayHandler.addToQueue(element);
+        scheduleNextDelayQueue(TIMER_C010_DELAY_QUEUE, C010_DelayHandler.getNextScheduleTime());
         break;
       }
+
+    case CPLUGIN_FLUSH:
+      {
+        process_c010_delay_queue();
+        delay(0);
+        break;
+      }
+
 
   }
   return success;
@@ -65,35 +82,25 @@ boolean CPlugin_010(byte function, struct EventStruct *event, String& string)
 //********************************************************************************
 // Generic UDP message
 //********************************************************************************
-void C010_Send(struct EventStruct *event, byte varIndex, float value, unsigned long longValue)
-{
-  ControllerSettingsStruct ControllerSettings;
-  LoadControllerSettings(event->ControllerIndex, (byte*)&ControllerSettings, sizeof(ControllerSettings));
+bool do_process_c010_delay_queue(int controller_number, const C010_queue_element& element, ControllerSettingsStruct& ControllerSettings) {
+  while (element.txt[element.valuesSent] == "") {
+    // A non valid value, which we are not going to send.
+    // Increase sent counter until a valid value is found.
+    if (element.checkDone(true))
+      return true;
+  }
+  WiFiUDP C010_portUDP;
+  if (!beginWiFiUDP_randomPort(C010_portUDP)) return false;
+  if (!try_connect_host(controller_number, C010_portUDP, ControllerSettings))
+    return false;
 
-  char log[80];
-  // boolean success = false;
-  addLog(LOG_LEVEL_DEBUG, String(F("UDP  : sending to ")) + ControllerSettings.getHostPortString());
-  statusLED(true);
-
-  if (ExtraTaskSettings.TaskDeviceValueNames[0][0] == 0)
-    PluginCall(PLUGIN_GET_DEVICEVALUENAMES, event, dummyString);
-
-  String msg = "";
-  msg += ControllerSettings.Publish;
-  msg.replace(F("%sysname%"), Settings.Name);
-  msg.replace(F("%tskname%"), ExtraTaskSettings.TaskDeviceName);
-  msg.replace(F("%id%"), String(event->idx));
-  msg.replace(F("%valname%"), ExtraTaskSettings.TaskDeviceValueNames[varIndex]);
-  if (longValue)
-    msg.replace(F("%value%"), String(longValue));
-  else
-    msg.replace(F("%value%"), toString(value, ExtraTaskSettings.TaskDeviceValueDecimals[varIndex]));
-
-  ControllerSettings.beginPacket(portUDP);
-  portUDP.write(msg.c_str());
-  portUDP.endPacket();
-
-  msg.toCharArray(log, 80);
-  addLog(LOG_LEVEL_DEBUG_MORE, log);
-
+  C010_portUDP.write(
+    (uint8_t*)element.txt[element.valuesSent].c_str(),
+              element.txt[element.valuesSent].length());
+  bool reply = C010_portUDP.endPacket();
+  C010_portUDP.stop();
+  if (ControllerSettings.MustCheckReply)
+    return element.checkDone(reply);
+  return element.checkDone(true);
 }
+#endif

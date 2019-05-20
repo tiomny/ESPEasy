@@ -1,7 +1,7 @@
+#ifdef USES_P003
 //#######################################################################################################
 //#################################### Plugin 003: Pulse  ###############################################
 //#######################################################################################################
-
 #define PLUGIN_003
 #define PLUGIN_ID_003         3
 #define PLUGIN_NAME_003       "Generic - Pulse counter"
@@ -24,6 +24,11 @@ unsigned long Plugin_003_pulseCounter[TASKS_MAX];
 unsigned long Plugin_003_pulseTotalCounter[TASKS_MAX];
 unsigned long Plugin_003_pulseTime[TASKS_MAX];
 unsigned long Plugin_003_pulseTimePrevious[TASKS_MAX];
+unsigned long Plugin_003_lastChangetime[TASKS_MAX];
+boolean Plugin_003_edgeType_last[TASKS_MAX];
+byte Plugin_003_SelectedMode;
+byte Plugin_003_InputPin[TASKS_MAX];
+
 
 boolean Plugin_003(byte function, struct EventStruct *event, String& string)
 {
@@ -62,18 +67,24 @@ boolean Plugin_003(byte function, struct EventStruct *event, String& string)
         break;
       }
 
+    case PLUGIN_GET_DEVICEGPIONAMES:
+      {
+        event->String1 = formatGpioName_input(F("Pulse"));
+        break;
+      }
+
     case PLUGIN_WEBFORM_LOAD:
       {
-      	addFormNumericBox(string, F("Debounce Time (mSec)"), F("plugin_003")
-      			, Settings.TaskDevicePluginConfig[event->TaskIndex][0]);
+      	addFormNumericBox(F("Debounce Time (mSec)"), F("p003")
+      			, PCONFIG(0));
 
-        byte choice = Settings.TaskDevicePluginConfig[event->TaskIndex][1];
-        byte choice2 = Settings.TaskDevicePluginConfig[event->TaskIndex][2];
+        byte choice = PCONFIG(1);
+        byte choice2 = PCONFIG(2);
         String options[4] = { F("Delta"), F("Delta/Total/Time"), F("Total"), F("Delta/Total") };
-        addFormSelector(string, F("Counter Type"), F("plugin_003_countertype"), 4, options, NULL, choice );
+        addFormSelector(F("Counter Type"), F("p003_countertype"), 4, options, NULL, choice );
 
         if (choice !=0)
-          string += F("<span style=\"color:red\">Total count is not persistent!</span>");
+          addHtml(F("<span style=\"color:red\">Total count is not persistent!</span>"));
 
         String modeRaise[4];
         modeRaise[0] = F("LOW");
@@ -86,7 +97,7 @@ boolean Plugin_003(byte function, struct EventStruct *event, String& string)
         modeValues[2] = RISING;
         modeValues[3] = FALLING;
 
-        addFormSelector(string, F("Mode Type"), F("plugin_003_raisetype"), 4, modeRaise, modeValues, choice2 );
+        addFormSelector(F("Mode Type"), F("p003_raisetype"), 4, modeRaise, modeValues, choice2 );
 
         success = true;
         break;
@@ -94,9 +105,9 @@ boolean Plugin_003(byte function, struct EventStruct *event, String& string)
 
     case PLUGIN_WEBFORM_SAVE:
       {
-        Settings.TaskDevicePluginConfig[event->TaskIndex][0] = getFormItemInt(F("plugin_003"));
-        Settings.TaskDevicePluginConfig[event->TaskIndex][1] = getFormItemInt(F("plugin_003_countertype"));
-        Settings.TaskDevicePluginConfig[event->TaskIndex][2] = getFormItemInt(F("plugin_003_raisetype"));
+        PCONFIG(0) = getFormItemInt(F("p003"));
+        PCONFIG(1) = getFormItemInt(F("p003_countertype"));
+        PCONFIG(2) = getFormItemInt(F("p003_raisetype"));
         success = true;
         break;
       }
@@ -123,10 +134,13 @@ boolean Plugin_003(byte function, struct EventStruct *event, String& string)
     case PLUGIN_INIT:
       {
         String log = F("INIT : Pulse ");
-        log += Settings.TaskDevicePin1[event->TaskIndex];
+        log += CONFIG_PIN1;
         addLog(LOG_LEVEL_INFO,log);
-        pinMode(Settings.TaskDevicePin1[event->TaskIndex], INPUT_PULLUP);
-        success = Plugin_003_pulseinit(Settings.TaskDevicePin1[event->TaskIndex], event->TaskIndex,Settings.TaskDevicePluginConfig[event->TaskIndex][2]);
+        pinMode(CONFIG_PIN1, INPUT_PULLUP);
+        success = Plugin_003_pulseinit(CONFIG_PIN1, event->TaskIndex);
+		Plugin_003_SelectedMode = PCONFIG(2);
+		Plugin_003_InputPin[event->TaskIndex] = CONFIG_PIN1;
+
         break;
       }
 
@@ -136,7 +150,7 @@ boolean Plugin_003(byte function, struct EventStruct *event, String& string)
         UserVar[event->BaseVarIndex+1] = Plugin_003_pulseTotalCounter[event->TaskIndex];
         UserVar[event->BaseVarIndex+2] = Plugin_003_pulseTime[event->TaskIndex];
 
-        switch (Settings.TaskDevicePluginConfig[event->TaskIndex][1])
+        switch (PCONFIG(1))
         {
           case 0:
           {
@@ -180,14 +194,24 @@ boolean Plugin_003(byte function, struct EventStruct *event, String& string)
 \*********************************************************************************************/
 void Plugin_003_pulsecheck(byte Index)
 {
-  unsigned long PulseTime=millis() - Plugin_003_pulseTimePrevious[Index];
-  if(PulseTime > (unsigned long)Settings.TaskDevicePluginConfig[Index][0]) // check with debounce time for this task
-    {
-      Plugin_003_pulseCounter[Index]++;
-      Plugin_003_pulseTotalCounter[Index]++;
-      Plugin_003_pulseTime[Index] = PulseTime;
-      Plugin_003_pulseTimePrevious[Index]=millis();
-    }
+  const unsigned long PulseLength=timePassedSince(Plugin_003_lastChangetime[Index]);
+  Plugin_003_lastChangetime[Index] = millis();
+  
+  if(PulseLength > (unsigned long)Settings.TaskDevicePluginConfig[Index][0])
+  {
+	  // Read state of the digital input
+	  bool edgeType = digitalRead(Plugin_003_InputPin[Index]);
+	  
+	  if(edgeType != Plugin_003_edgeType_last[Index] && ((Plugin_003_SelectedMode == CHANGE) || (Plugin_003_SelectedMode == RISING && Plugin_003_edgeType_last[Index] == 1) || (Plugin_003_SelectedMode == FALLING && Plugin_003_edgeType_last[Index] == 0)))
+	  {
+		const unsigned long PulseTime=timePassedSince(Plugin_003_pulseTimePrevious[Index]);
+		Plugin_003_pulseCounter[Index]++;
+		Plugin_003_pulseTotalCounter[Index]++;
+		Plugin_003_pulseTime[Index] = PulseTime;
+		Plugin_003_pulseTimePrevious[Index]=millis();
+	  } 
+	  Plugin_003_edgeType_last[Index] = edgeType;
+  }
 }
 
 
@@ -231,22 +255,22 @@ void Plugin_003_pulse_interrupt8()
 /*********************************************************************************************\
  * Init Pulse Counters
 \*********************************************************************************************/
-bool Plugin_003_pulseinit(byte Par1, byte Index, byte Mode)
+bool Plugin_003_pulseinit(byte Par1, byte Index)
 {
 
   switch (Index)
   {
     case 0:
-      attachInterrupt(Par1, Plugin_003_pulse_interrupt1, Mode);
+      attachInterrupt(Par1, Plugin_003_pulse_interrupt1, CHANGE);
       break;
     case 1:
-      attachInterrupt(Par1, Plugin_003_pulse_interrupt2, Mode);
+      attachInterrupt(Par1, Plugin_003_pulse_interrupt2, CHANGE);
       break;
     case 2:
-      attachInterrupt(Par1, Plugin_003_pulse_interrupt3, Mode);
+      attachInterrupt(Par1, Plugin_003_pulse_interrupt3, CHANGE);
       break;
     case 3:
-      attachInterrupt(Par1, Plugin_003_pulse_interrupt4, Mode);
+      attachInterrupt(Par1, Plugin_003_pulse_interrupt4, CHANGE);
       break;
     // case 4:
     //   attachInterrupt(Par1, Plugin_003_pulse_interrupt5, Mode);
@@ -267,3 +291,4 @@ bool Plugin_003_pulseinit(byte Par1, byte Index, byte Mode)
 
   return(true);
 }
+#endif // USES_P003

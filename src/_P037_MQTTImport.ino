@@ -1,3 +1,4 @@
+#ifdef USES_P037
 //#######################################################################################################
 //#################################### Plugin 037: MQTT Import ##########################################
 //#######################################################################################################
@@ -19,19 +20,75 @@
 
 // Declare a Wifi client for this plugin only
 
+// TODO TD-er: These must be kept in some vector to allow multiple instances of MQTT import.
 WiFiClient espclient_037;
-PubSubClient *MQTTclient_037;
+PubSubClient *MQTTclient_037 = NULL;
+bool MQTTclient_037_connected = false;
+int reconnectCount = 0;
+
+String getClientName() {
+  //
+  // Generate the MQTT import client name from the system name and a suffix
+  //
+  String tmpClientName = F("%sysname%-Import");
+  String ClientName = parseTemplate(tmpClientName, 20);
+  ClientName.trim(); // Avoid spaced in the name.
+  ClientName.replace(' ', '_');
+  if (reconnectCount != 0) ClientName += reconnectCount;
+  return ClientName;
+}
+
+void Plugin_037_try_connect() {
+  Plugin_037_update_connect_status();
+  if (MQTTclient_037_connected) return;
+  // workaround see: https://github.com/esp8266/Arduino/issues/4497#issuecomment-373023864
+  espclient_037 = WiFiClient();
+  espclient_037.setTimeout(CONTROLLER_CLIENTTIMEOUT_DFLT);
+
+  if (MQTTclient_037 == NULL) {
+    MQTTclient_037 = new PubSubClient(espclient_037);
+  }
+  if (MQTTConnect_037())
+  {
+    //		Subscribe to ALL the topics from ALL instance of this import module
+    MQTTSubscribe_037();
+  } else {
+    MQTTclient_037->disconnect();
+  }
+  Plugin_037_update_connect_status();
+}
+
+void Plugin_037_update_connect_status() {
+  bool connected = false;
+  if (MQTTclient_037 != NULL) {
+    connected = MQTTclient_037->connected();
+  }
+  if (MQTTclient_037_connected != connected) {
+    MQTTclient_037_connected = !MQTTclient_037_connected;
+    P037_MQTTImport_connected  = MQTTclient_037_connected;
+
+    if (Settings.UseRules) {
+      String event = connected ? F("MQTTimport#Connected") : F("MQTTimport#Disconnected");
+      rulesProcessing(event);
+    }
+    if (!connected) {
+      // workaround see: https://github.com/esp8266/Arduino/issues/4497#issuecomment-373023864
+      if (MQTTclient_037 != NULL) {
+        espclient_037 = WiFiClient();
+        espclient_037.setTimeout(CONTROLLER_CLIENTTIMEOUT_DFLT);
+        MQTTclient_037->setClient(espclient_037);
+      }
+      ++reconnectCount;
+      addLog(LOG_LEVEL_ERROR, F("IMPT : MQTT 037 Connection lost"));
+    }
+  }
+}
 
 boolean Plugin_037(byte function, struct EventStruct *event, String& string)
 {
   boolean success = false;
 
   char deviceTemplate[4][41];		// variable for saving the subscription topics
-  //
-  // Generate the MQTT import client name from the system name and a suffix
-  //
-  String tmpClientName = "%sysname%-Import";
-  String ClientName = parseTemplate(tmpClientName, 20);
 
   switch (function)
   {
@@ -73,7 +130,7 @@ boolean Plugin_037(byte function, struct EventStruct *event, String& string)
 
         for (byte varNr = 0; varNr < 4; varNr++)
         {
-        	addFormTextBox(string, String(F("MQTT Topic ")) + (varNr + 1), String(F("Plugin_037_template")) +
+        	addFormTextBox(String(F("MQTT Topic ")) + (varNr + 1), String(F("p037_template")) +
         			(varNr + 1), deviceTemplate[varNr], 40);
         }
         success = true;
@@ -82,13 +139,17 @@ boolean Plugin_037(byte function, struct EventStruct *event, String& string)
 
     case PLUGIN_WEBFORM_SAVE:
       {
-        String argName;
-
+        String error;
         for (byte varNr = 0; varNr < 4; varNr++)
         {
-          argName = F("Plugin_037_template");
+          String argName = F("p037_template");
           argName += varNr + 1;
-          strncpy(deviceTemplate[varNr], WebServer.arg(argName).c_str(), sizeof(deviceTemplate[varNr]));
+          if (!safe_strncpy(deviceTemplate[varNr], WebServer.arg(argName).c_str(), sizeof(deviceTemplate[varNr]))) {
+            error += getCustomTaskSettingsError(varNr);
+          }
+        }
+        if (error.length() > 0) {
+          addHtmlError(error);
         }
 
         SaveCustomTaskSettings(event->TaskIndex, (byte*)&deviceTemplate, sizeof(deviceTemplate));
@@ -99,29 +160,25 @@ boolean Plugin_037(byte function, struct EventStruct *event, String& string)
 
     case PLUGIN_INIT:
       {
-        if (!MQTTclient_037)
-          MQTTclient_037 = new PubSubClient(espclient_037);
-
+        success = false;
         //    When we edit the subscription data from the webserver, the plugin is called again with init.
         //    In order to resubscribe we have to disconnect and reconnect in order to get rid of any obsolete subscriptions
-
-        MQTTclient_037->disconnect();
-
-        if (MQTTConnect_037(ClientName))
-        {
-          //		Subscribe to ALL the topics from ALL instance of this import module
-          MQTTSubscribe_037();
-          success = true;
-        }
-        else
-        {
-          success = false;
+        if (MQTTclient_037 != NULL) {
+          MQTTclient_037->disconnect();
+          if (MQTTConnect_037())
+          {
+            //		Subscribe to ALL the topics from ALL instance of this import module
+            MQTTSubscribe_037();
+            success = true;
+          }
         }
       }
 
     case PLUGIN_TEN_PER_SECOND:
       {
-        MQTTclient_037->loop();		// Listen out for callbacks
+        if (MQTTclient_037 != NULL && !MQTTclient_037->loop()) {		// Listen out for callbacks
+          Plugin_037_update_connect_status();
+        }
         success = true;
         break;
       }
@@ -129,23 +186,26 @@ boolean Plugin_037(byte function, struct EventStruct *event, String& string)
     case PLUGIN_ONCE_A_SECOND:
       {
         //  Here we check that the MQTT client is alive.
+        Plugin_037_try_connect();
+        if (MQTTclient_037 != NULL) {
+          if (!MQTTclient_037->connected() || MQTTclient_should_reconnect) {
+            if (MQTTclient_should_reconnect) {
+              addLog(LOG_LEVEL_ERROR, F("IMPT : MQTT 037 Intentional reconnect"));
+            }
 
-        if (!MQTTclient_037->connected()) {
+            MQTTclient_037->disconnect();
+            Plugin_037_update_connect_status();
+            delay(250);
 
-          addLog(LOG_LEVEL_ERROR, F("IMPT : MQTT 037 Connection lost"));
+            if (! MQTTConnect_037()) {
+              success = false;
+              break;
+            }
 
-          MQTTclient_037->disconnect();
-          delay(1000);
-
-          if (! MQTTConnect_037(ClientName)) {
-            success = false;
-            break;
+            MQTTSubscribe_037();
           }
-
-          MQTTSubscribe_037();
+          success = true;
         }
-
-        success = true;
         break;
       }
 
@@ -162,20 +222,18 @@ boolean Plugin_037(byte function, struct EventStruct *event, String& string)
         // This is a private option only used by the MQTT 037 callback function
 
         //      Get the payload and check it out
-
-        String Payload = event->String2;
-        float floatPayload = string2float(Payload);
-
         LoadTaskSettings(event->TaskIndex);
 
-        if (floatPayload == -999) {
+        String Payload = event->String2;
+        float floatPayload;
+        if (!string2float(Payload, floatPayload)) {
           String log = F("IMPT : Bad Import MQTT Command ");
           log += event->String1;
           addLog(LOG_LEVEL_ERROR, log);
           log = F("ERR  : Illegal Payload ");
           log += Payload;
           log += "  ";
-          log += ExtraTaskSettings.TaskDeviceName;
+          log += getTaskDeviceName(event->TaskIndex);
           addLog(LOG_LEVEL_INFO, log);
           success = false;
           break;
@@ -194,7 +252,7 @@ boolean Plugin_037(byte function, struct EventStruct *event, String& string)
           if (subscriptionTopic.length() == 0) continue;							// skip blank subscriptions
 
           // Now check if the incoming topic matches one of our subscriptions
-
+          parseSystemVariables(subscriptionTopic, false);
           if (MQTTCheckSubscription_037(Topic, subscriptionTopic))
           {
             UserVar[event->BaseVarIndex + x] = floatPayload;							// Save the new value
@@ -202,7 +260,7 @@ boolean Plugin_037(byte function, struct EventStruct *event, String& string)
             // Log the event
 
             String log = F("IMPT : [");
-            log += ExtraTaskSettings.TaskDeviceName;
+            log += getTaskDeviceName(event->TaskIndex);
             log += F("#");
             log += ExtraTaskSettings.TaskDeviceValueNames[x];
             log += F("] : ");
@@ -213,8 +271,8 @@ boolean Plugin_037(byte function, struct EventStruct *event, String& string)
 
             if (Settings.UseRules)
             {
-              String RuleEvent = F("");
-              RuleEvent += ExtraTaskSettings.TaskDeviceName;
+              String RuleEvent = "";
+              RuleEvent += getTaskDeviceName(event->TaskIndex);
               RuleEvent += F("#");
               RuleEvent += ExtraTaskSettings.TaskDeviceValueNames[x];
               RuleEvent += F("=");
@@ -235,6 +293,7 @@ boolean Plugin_037(byte function, struct EventStruct *event, String& string)
 }
 boolean MQTTSubscribe_037()
 {
+  if (!MQTTclient_037_connected) return false;
 
   // Subscribe to the topics requested by ALL calls to this plugin.
   // We do this because if the connection to the broker is lost, we want to resubscribe for all instances.
@@ -257,11 +316,12 @@ boolean MQTTSubscribe_037()
 
         if (subscribeTo.length() > 0)
         {
-          if (MQTTclient_037->subscribe(subscribeTo.c_str()))
+          parseSystemVariables(subscribeTo, false);
+          if (MQTTclient_037 != NULL && MQTTclient_037->subscribe(subscribeTo.c_str()))
           {
             String log = F("IMPT : [");
             LoadTaskSettings(y);
-            log += ExtraTaskSettings.TaskDeviceName;
+            log += getTaskDeviceName(y);
             log += F("#");
             log += ExtraTaskSettings.TaskDeviceValueNames[x];
             log += F("] subscribed to ");
@@ -312,8 +372,9 @@ void mqttcallback_037(char* c_topic, byte* b_payload, unsigned int length)
     if (Settings.TaskDeviceNumber[y] == PLUGIN_ID_037)                // if we have found a 037 device, then give it something to think about!
     {
       TempEvent.TaskIndex = y;
+      LoadTaskSettings(TempEvent.TaskIndex);
       TempEvent.BaseVarIndex = y * VARS_PER_TASK;           // This is the index in Uservar where values for this task are stored
-      Plugin_ptr[DeviceIndex](PLUGIN_IMPORT, &TempEvent, payload);
+      schedule_plugin_task_event_timer(DeviceIndex, PLUGIN_IMPORT, &TempEvent);
     }
   }
 }
@@ -323,19 +384,27 @@ void mqttcallback_037(char* c_topic, byte* b_payload, unsigned int length)
 // For some reason this seems to failduring the call in INIT- however it succeeds later during recovery
 // It would be nice to understand this....
 
-boolean MQTTConnect_037(String clientid)
-
+boolean MQTTConnect_037()
 {
-  ControllerSettingsStruct ControllerSettings;
-  LoadControllerSettings(0, (byte*)&ControllerSettings, sizeof(ControllerSettings)); // todo index is now fixed to 0
-
   boolean result = false;
-
+  if (MQTTclient_037 == NULL) return false;
+  String clientid = getClientName();
+  // @ToDo TD-er: Plugin allows for more than one MQTT controller, but we're now using only the first enabled one.
+  int enabledMqttController = firstEnabledMQTTController();
+  if (enabledMqttController < 0) {
+    // No enabled MQTT controller
+    return false;
+  }
   // Do nothing if already connected
-
-  if (MQTTclient_037->connected())return true;
+  if (MQTTclient_037->connected()) return true;
 
   // define stuff for the client - this could also be done in the intial declaration of MQTTclient_037
+  if (!WiFiConnected(100)) {
+    Plugin_037_update_connect_status();
+    return false; // Not connected, so no use in wasting time to connect to a host.
+  }
+  MakeControllerSettings(ControllerSettings);
+  LoadControllerSettings(enabledMqttController, ControllerSettings);
   if (ControllerSettings.UseDNS) {
     MQTTclient_037->setServer(ControllerSettings.getHost().c_str(), ControllerSettings.Port);
   } else {
@@ -349,8 +418,8 @@ boolean MQTTConnect_037(String clientid)
   {
     String log = "";
 
-    if ((SecuritySettings.ControllerUser[0][0] != 0) && (SecuritySettings.ControllerPassword[0][0] != 0)) //
-      result = MQTTclient_037->connect(clientid.c_str(), SecuritySettings.ControllerUser[0], SecuritySettings.ControllerPassword[0]); // todo
+    if ((SecuritySettings.ControllerUser[enabledMqttController][0] != 0) && (SecuritySettings.ControllerPassword[enabledMqttController][0] != 0))
+      result = MQTTclient_037->connect(clientid.c_str(), SecuritySettings.ControllerUser[enabledMqttController], SecuritySettings.ControllerPassword[enabledMqttController]);
     else
       result = MQTTclient_037->connect(clientid.c_str());
 
@@ -372,14 +441,14 @@ boolean MQTTConnect_037(String clientid)
 
     delay(500);
   }
-
+  Plugin_037_update_connect_status();
   return MQTTclient_037->connected();
 }
 
 //
 // Check to see if Topic matches the MQTT subscription
 //
-boolean MQTTCheckSubscription_037(String Topic, String Subscription) {
+boolean MQTTCheckSubscription_037(const String& Topic, const String& Subscription) {
 
   String tmpTopic = Topic;
   String tmpSub = Subscription;
@@ -395,10 +464,10 @@ boolean MQTTCheckSubscription_037(String Topic, String Subscription) {
   // Add trailing / if required
 
   int lenTopic = tmpTopic.length();
-  if (tmpTopic.substring(lenTopic - 1, lenTopic) != "/")tmpTopic += F("/");
+  if (tmpTopic.substring(lenTopic - 1, lenTopic) != "/")tmpTopic += '/';
 
   int lenSub = tmpSub.length();
-  if (tmpSub.substring(lenSub - 1, lenSub) != "/")tmpSub += F("/");
+  if (tmpSub.substring(lenSub - 1, lenSub) != "/")tmpSub += '/';
 
   // Now get first part
 
@@ -441,42 +510,4 @@ boolean MQTTCheckSubscription_037(String Topic, String Subscription) {
   }
   return false;
 }
-
-//	***************************************************************************
-// Convert String to float - returns -999 in case of error
-float string2float(String myString) {
-  int i, len;
-  float value;
-  len = myString.length();
-  char tmp[(len + 1)];       // one extra for the zero termination
-  byte start = 0;
-
-  //  Look for decimal point - they can be anywhere but no more than one of them!
-
-  int dotIndex = myString.indexOf(".");
-  //Serial.println(dotIndex);
-
-  if (dotIndex != -1)
-  {
-    int dotIndex2 = (myString.substring(dotIndex + 1)).indexOf(".");
-    //Serial.println(dotIndex2);
-    if (dotIndex2 != -1)return -999.00;    // Give error if there is more than one dot
-  }
-
-  if (myString.substring(0, 1) == "-") {
-    start = 1;   //allow a minus in front of string
-  }
-
-  for (i = start; i < len; i++)
-  {
-    tmp[i] = myString.charAt(i);
-    if (!isdigit(tmp[i]))
-    {
-      if (tmp[i] != '.')return -999;
-    }
-  }
-
-  tmp[i] = 0;
-  value = atof(tmp);
-  return value;
-}
+#endif // USES_P037

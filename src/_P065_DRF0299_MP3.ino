@@ -1,3 +1,4 @@
+#ifdef USES_P065
 //#######################################################################################################
 //############################# Plugin 065: P065_DFR0299_MP3 ############################################
 //#######################################################################################################
@@ -5,20 +6,20 @@
 // ESPEasy Plugin to controls a MP3-player-module DFPlayer-Mini SKU:DFR0299
 // written by Jochen Krapf (jk@nerd2nerd.org)
 
-// Important! The module WTV020-SD look similar to the module DFPlayer-Mini but is NOT pin and command compatible!
+// Important! The module WTV020-SD look similar to the module DFPlayer-Mini but is NOT pin nor command compatible!
 
 // Commands:
-// play,<track>        Plays the n-th track 1...3000 on SD-card in root folder. The track number is the physical ordenr - not the order displayed in file explorer!
+// play,<track>        Plays the n-th track 1...3000 on SD-card in root folder. The track number is the physical order - not the order displayed in file explorer!
 // stop                Stops actual playing sound
 // vol,<volume>        Set volume level 1...30
 // eq,<type>           Set the equalizer type 0=Normal, 1=Pop, 2=Rock, 3=Jazz, 4=classic, 5=Base
 
 // Circuit wiring
 // 1st-GPIO -> ESP TX to module RX [Pin2]
-// 5V to module VCC [Pin1] (can be more than 100mA) Note: Use a capacitor to denoise VCC
+// 5 V to module VCC [Pin1] (can be more than 100 mA) Note: Use a blocking capacitor to stabilise VCC
 // GND to module GND [Pin7+Pin10]
 // Speaker to module SPK_1 and SPK_2 [Pin6,Pin8] (not to GND!) Note: If speaker has to low impedance, use a resistor (like 33 Ohm) in line to speaker
-// (optional) module BUSY [Pin16] to LED driver (3.3V on idle, 0V on playing)
+// (optional) module BUSY [Pin16] to LED driver (3.3 V on idle, 0 V on playing)
 // All other pins unconnected
 
 // Note: Notification sounds with Creative Commons Attribution license: https://notificationsounds.com/
@@ -26,23 +27,16 @@
 // Datasheet: https://www.dfrobot.com/wiki/index.php/DFPlayer_Mini_SKU:DFR0299
 
 
-#ifdef PLUGIN_BUILD_TESTING
 
 #define PLUGIN_065
 #define PLUGIN_ID_065         65
 #define PLUGIN_NAME_065       "Notify - DFPlayer-Mini MP3 [TESTING]"
 #define PLUGIN_VALUENAME1_065 ""
 
-#include <SoftwareSerial.h>
+#include <ESPeasySerial.h>
 
-#ifndef CONFIG
-#define CONFIG(n) (Settings.TaskDevicePluginConfig[event->TaskIndex][n])
-#endif
-#ifndef PIN
-#define PIN(n) (Settings.TaskDevicePin[n][event->TaskIndex])
-#endif
 
-SoftwareSerial* Plugin_065_SoftSerial = NULL;
+ESPeasySerial* P065_easySerial = NULL;
 
 
 boolean Plugin_065(byte function, struct EventStruct *event, String& string)
@@ -56,7 +50,7 @@ boolean Plugin_065(byte function, struct EventStruct *event, String& string)
       {
         Device[++deviceCount].Number = PLUGIN_ID_065;
         Device[deviceCount].Type = DEVICE_TYPE_SINGLE;
-        Device[deviceCount].VType = SENSOR_TYPE_SWITCH;
+        Device[deviceCount].VType = SENSOR_TYPE_NONE;
         Device[deviceCount].Ports = 0;
         Device[deviceCount].PullUpOption = false;
         Device[deviceCount].InverseLogicOption = false;
@@ -76,13 +70,13 @@ boolean Plugin_065(byte function, struct EventStruct *event, String& string)
 
       case PLUGIN_GET_DEVICEGPIONAMES:
         {
-          event->String1 = F("GPIO &rarr; RX");
+          event->String1 = formatGpioName_TX(false);
           break;
         }
 
     case PLUGIN_WEBFORM_LOAD:
       {
-          addFormNumericBox(string, F("Volume"), F("volume"), CONFIG(0), 1, 30);
+          addFormNumericBox(F("Volume"), F("volume"), PCONFIG(0), 1, 30);
 
           success = true;
           break;
@@ -90,7 +84,7 @@ boolean Plugin_065(byte function, struct EventStruct *event, String& string)
 
     case PLUGIN_WEBFORM_SAVE:
       {
-        CONFIG(0) = getFormItemInt(F("volume"));
+        PCONFIG(0) = getFormItemInt(F("volume"));
 
         success = true;
         break;
@@ -101,16 +95,16 @@ boolean Plugin_065(byte function, struct EventStruct *event, String& string)
         #pragma GCC diagnostic push
         //note: we cant fix this, its a upstream bug.
         #pragma GCC diagnostic warning "-Wdelete-non-virtual-dtor"
-        if (Plugin_065_SoftSerial)
-          delete Plugin_065_SoftSerial;
+        if (P065_easySerial)
+          delete P065_easySerial;
         #pragma GCC diagnostic pop
 
 
-        Plugin_065_SoftSerial = new SoftwareSerial(-1, PIN(0));   // no RX, only TX
+        P065_easySerial = new ESPeasySerial(-1, CONFIG_PIN1);   // no RX, only TX
 
-        Plugin_065_SoftSerial->begin(9600);
+        P065_easySerial->begin(9600);
 
-        Plugin_065_SetVol(CONFIG(0));   // set default volume
+        Plugin_065_SetVol(PCONFIG(0));   // set default volume
 
         success = true;
         break;
@@ -118,22 +112,23 @@ boolean Plugin_065(byte function, struct EventStruct *event, String& string)
 
     case PLUGIN_WRITE:
       {
-        if (!Plugin_065_SoftSerial)
+        if (!P065_easySerial)
           break;
 
-        string.toLowerCase();
         String command = parseString(string, 1);
         String param = parseString(string, 2);
 
         if (command == F("play"))
         {
-          String log = F("MP3  : play=");
-
-          uint16_t track = param.toInt();
-          Plugin_065_Play(track);
-          log += track;
-
-          addLog(LOG_LEVEL_INFO, log);
+          int track;
+          if (validIntFromString(param, track)) {
+            Plugin_065_Play(track);
+            if (loglevelActiveFor(LOG_LEVEL_INFO)) {
+              String log = F("MP3  : play=");
+              log += track;
+              addLog(LOG_LEVEL_INFO, log);
+            }
+          }
           success = true;
         }
 
@@ -153,7 +148,7 @@ boolean Plugin_065(byte function, struct EventStruct *event, String& string)
 
           int8_t vol = param.toInt();
           if (vol == 0) vol = 30;
-          CONFIG(0) = vol;
+          PCONFIG(0) = vol;
           Plugin_065_SetVol(vol);
           log += vol;
 
@@ -201,7 +196,7 @@ void Plugin_065_SetEQ(int8_t eq)
 
 void Plugin_065_SendCmd(byte cmd, int16_t data)
 {
-  if (!Plugin_065_SoftSerial)
+  if (!P065_easySerial)
     return;
 
   byte buffer[10] = { 0x7E, 0xFF, 0x06, 0, 0x00, 0, 0, 0, 0, 0xEF };
@@ -214,15 +209,15 @@ void Plugin_065_SendCmd(byte cmd, int16_t data)
   buffer[7] = checksum >> 8;   // high byte
   buffer[8] = checksum & 0xFF;   // low byte
 
-  Plugin_065_SoftSerial->write(buffer, 10);   //Send the byte array
+  P065_easySerial->write(buffer, 10);   //Send the byte array
 
   String log = F("MP3  : Send Cmd ");
   for (byte i=0; i<10; i++)
   {
     log += String(buffer[i], 16);
-    log += F(" ");
+    log += ' ';
   }
   addLog(LOG_LEVEL_DEBUG, log);
 }
 
-#endif
+#endif // USES_P065

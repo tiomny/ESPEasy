@@ -18,7 +18,6 @@ static const char ADDCPLUGIN_ERROR[] PROGMEM = "System: Error - To much C-Plugin
 */
 #define ADDCPLUGIN(NNN) if (x < CPLUGIN_MAX) { CPlugin_id[x] = CPLUGIN_ID_##NNN; CPlugin_ptr[x++] = &CPlugin_##NNN; } else addLog(LOG_LEVEL_ERROR, FPSTR(ADDCPLUGIN_ERROR));
 
-
 void CPluginInit(void)
 {
   byte x;
@@ -133,9 +132,17 @@ void CPluginInit(void)
 #endif
 
   CPluginCall(CPLUGIN_PROTOCOL_ADD, 0);
+  CPluginCall(CPLUGIN_INIT, 0);
 }
 
-byte CPluginCall(byte Function, struct EventStruct *event)
+bool CPluginCall(byte pluginNumber, byte Function, struct EventStruct *event, String& str) {
+  START_TIMER;
+  bool ret = CPlugin_ptr[pluginNumber](Function, event, str);
+  STOP_TIMER_CONTROLLER(pluginNumber, Function);
+  return ret;
+}
+
+bool CPluginCall(byte Function, struct EventStruct *event, String& str)
 {
   int x;
   struct EventStruct TempEvent;
@@ -147,12 +154,72 @@ byte CPluginCall(byte Function, struct EventStruct *event)
   {
     // Unconditional calls to all plugins
     case CPLUGIN_PROTOCOL_ADD:
-      for (x = 0; x < CPLUGIN_MAX; x++)
-        if (CPlugin_id[x] != 0)
-          CPlugin_ptr[x](Function, event, dummyString);
+      for (x = 0; x < CPLUGIN_MAX; x++) {
+        if (CPlugin_id[x] != 0) {
+          const unsigned int next_ProtocolIndex = protocolCount + 2;
+          if (next_ProtocolIndex > Protocol.size()) {
+            // Increase with 8 to get some compromise between number of resizes and wasted space
+            unsigned int newSize = Protocol.size();
+            newSize = newSize + 8 - (newSize % 8);
+            Protocol.resize(newSize);
+          }
+          checkRAM(F("CPluginCallADD"),x);
+          CPluginCall(x, Function, event, dummyString);
+        }
+      }
       return true;
       break;
+
+
+    // calls to active plugins
+    case CPLUGIN_INIT:
+    case CPLUGIN_UDP_IN:
+    case CPLUGIN_INTERVAL: // calls to send stats information
+    case CPLUGIN_GOT_CONNECTED: // calls to send autodetect information
+    case CPLUGIN_GOT_INVALID: // calls to mark unit as invalid
+    case CPLUGIN_FLUSH:
+      for (byte x=0; x < CONTROLLER_MAX; x++)
+        if (Settings.Protocol[x] != 0 && Settings.ControllerEnabled[x]) {
+          event->ProtocolIndex = getProtocolIndex(Settings.Protocol[x]);
+          CPluginCall(event->ProtocolIndex, Function, event, dummyString);
+        }
+      return true;
+      break;
+
+    case CPLUGIN_ACKNOWLEDGE: // calls to send acknolages back to controller
+    for (byte x=0; x < CONTROLLER_MAX; x++)
+      if (Settings.Protocol[x] != 0 && Settings.ControllerEnabled[x]) {
+        event->ProtocolIndex = getProtocolIndex(Settings.Protocol[x]);
+        CPluginCall(event->ProtocolIndex, Function, event, str);
+      }
+    return true;
+    break;
+
   }
 
   return false;
+}
+
+// Check if there is any controller enabled.
+bool anyControllerEnabled() {
+  for (byte i=0; i < CONTROLLER_MAX; i++) {
+    if (Settings.Protocol[i] != 0 && Settings.ControllerEnabled[i]) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// Find first enabled controller index with this protocol
+byte findFirstEnabledControllerWithId(byte cpluginid) {
+  for (byte i=0; i < CONTROLLER_MAX; i++) {
+    if (Settings.Protocol[i] == cpluginid && Settings.ControllerEnabled[i]) {
+      return i;
+    }
+  }
+  return CONTROLLER_MAX;
+}
+
+bool CPluginCall(byte Function, struct EventStruct *event) {
+  return CPluginCall(Function, event, dummyString);
 }

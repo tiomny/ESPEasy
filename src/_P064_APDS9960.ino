@@ -1,3 +1,4 @@
+#ifdef USES_P064
 //#######################################################################################################
 //#################################### Plugin 064: APDS9960 Gesture ##############################
 //#######################################################################################################
@@ -14,7 +15,6 @@
 // Note: The chip has a wide view-of-angle. If housing is in this angle the chip blocks!
 
 
-#ifdef PLUGIN_BUILD_DEV
 
 #define PLUGIN_064
 #define PLUGIN_ID_064         64
@@ -29,10 +29,6 @@
 */
 
 #include <SparkFun_APDS9960.h>   //Lib is modified to work with ESP
-
-#ifndef CONFIG
-#define CONFIG(n) (Settings.TaskDevicePluginConfig[event->TaskIndex][n])
-#endif
 
 SparkFun_APDS9960* PLUGIN_064_pds = NULL;
 
@@ -81,10 +77,10 @@ boolean Plugin_064(byte function, struct EventStruct *event, String& string)
 
     case PLUGIN_WEBFORM_LOAD:
       {
-        byte addr = 0x39;   // CONFIG(0); chip has only 1 address
+        byte addr = 0x39;   // PCONFIG(0); chip has only 1 address
 
         int optionValues[1] = { 0x39 };
-        addFormSelectorI2C(string, F("i2c_addr"), 1, optionValues, addr);  //Only for display I2C address
+        addFormSelectorI2C(F("i2c_addr"), 1, optionValues, addr);  //Only for display I2C address
 
         success = true;
         break;
@@ -92,7 +88,7 @@ boolean Plugin_064(byte function, struct EventStruct *event, String& string)
 
     case PLUGIN_WEBFORM_SAVE:
       {
-        //CONFIG(0) = getFormItemInt(F("i2c_addr"));
+        //PCONFIG(0) = getFormItemInt(F("i2c_addr"));
 
         success = true;
         break;
@@ -141,9 +137,9 @@ boolean Plugin_064(byte function, struct EventStruct *event, String& string)
 
         //int gesture = PLUGIN_064_pds->readGestureNonBlocking();
 
-        //if (gesture == -1) Serial.print(".");
-        //if (gesture == -2) Serial.print(":");
-        //if (gesture == -3) Serial.print("|");
+        //if (gesture == -1) serialPrint(".");
+        //if (gesture == -2) serialPrint(":");
+        //if (gesture == -3) serialPrint("|");
 
         //if ( 0 && PLUGIN_064_pds->isGestureAvailable() )
         if (gesture >= 0)
@@ -160,9 +156,9 @@ boolean Plugin_064(byte function, struct EventStruct *event, String& string)
             case DIR_FAR:     log += F("FAR");     break;
             default:          log += F("NONE");    break;
           }
-          log += F(" (");
+          log += " (";
           log += gesture;
-          log += F(")");
+          log += ')';
 
           UserVar[event->BaseVarIndex] = (float)gesture;
           event->sensorType = SENSOR_TYPE_SWITCH;
@@ -214,4 +210,4 @@ boolean Plugin_064(byte function, struct EventStruct *event, String& string)
   return success;
 }
 
-#endif
+#endif // USES_P064

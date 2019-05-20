@@ -1,11 +1,12 @@
+#ifdef USES_P036
 //#######################################################################################################
 //#################################### Plugin 036: OLED SSD1306 display #################################
 //
 // This is a modification to Plugin_023 with graphics library provided from squix78 github
 // https://github.com/squix78/esp8266-oled-ssd1306
 //
-// The OLED can display up to 12 strings in four frames - ie 12 frames with 1 line, 6 with 2 lines or 3 with 4 lines.
-// The font size is adjsted according to the number of lines required per frame.
+// The OLED can display up to 12 strings in four frames - i.e. 12 frames with 1 line, 6 with 2 lines or 3 with 4 lines.
+// The font size is adjusted according to the number of lines required per frame.
 //
 // Major work on this plugin has been done by 'Namirda'
 // Added to the main repository with some optimizations and some limitations.
@@ -13,28 +14,56 @@
 
 #define PLUGIN_036
 #define PLUGIN_ID_036         36
-#define PLUGIN_NAME_036       "Display - OLED SSD1306 Framed"
+#define PLUGIN_NAME_036       "Display - OLED SSD1306/SH1106 Framed"
 #define PLUGIN_VALUENAME1_036 "OLED"
 
-#define Nlines 12				// The number of different lines which can be displayed - each line is 32 chars max
+#define P36_Nlines 12        // The number of different lines which can be displayed - each line is 32 chars max
+#define P36_Nchars 32
+
+#define P36_CONTRAST_OFF    1
+#define P36_CONTRAST_LOW    64
+#define P36_CONTRAST_MED  0xCF
+#define P36_CONTRAST_HIGH 0xFF
+
 
 #include "SSD1306.h"
-#include "images.h"
+#include "SH1106Wire.h"
+#include "OLED_SSD1306_SH1106_images.h"
+#include "Dialog_Plain_12_font.h"
+
+#define P36_WIFI_STATE_UNSET          -2
+#define P36_WIFI_STATE_NOT_CONNECTED  -1
+
+static int8_t lastWiFiState = P36_WIFI_STATE_UNSET;
 
 // Instantiate display here - does not work to do this within the INIT call
 
-SSD1306 *display=NULL;
+OLEDDisplay *display=NULL;
+
+String P036_displayLines[P36_Nlines];
+
+void Plugin_036_loadDisplayLines(byte taskIndex) {
+  char P036_deviceTemplate[P36_Nlines][P36_Nchars];
+  LoadCustomTaskSettings(taskIndex, (byte*)&P036_deviceTemplate, sizeof(P036_deviceTemplate));
+  for (byte varNr = 0; varNr < P36_Nlines; varNr++) {
+    P036_displayLines[varNr] = P036_deviceTemplate[varNr];
+  }
+
+
+}
 
 boolean Plugin_036(byte function, struct EventStruct *event, String& string)
 {
   boolean success = false;
 
   static byte displayTimer = 0;
-  static byte frameCounter = 0;				// need to keep track of framecounter from call to call
-  static boolean firstcall = true;			// This is used to clear the init graphic on the first call to read
+  static byte frameCounter = 0;       // need to keep track of framecounter from call to call
+  // static boolean firstcall = true;      // This is used to clear the init graphic on the first call to read
+  static byte nrFramesToDisplay = 0;
+  static byte currentFrameToDisplay = 0;
 
-  int linesPerFrame;						// the number of lines in each frame
-  int NFrames;								// the number of frames
+  int linesPerFrame;            // the number of lines in each frame
+  int NFrames;                // the number of frames
 
   switch (function)
   {
@@ -43,7 +72,7 @@ boolean Plugin_036(byte function, struct EventStruct *event, String& string)
       {
         Device[++deviceCount].Number = PLUGIN_ID_036;
         Device[deviceCount].Type = DEVICE_TYPE_I2C;
-        Device[deviceCount].VType = SENSOR_TYPE_SINGLE;
+        Device[deviceCount].VType = SENSOR_TYPE_NONE;
         Device[deviceCount].Ports = 0;
         Device[deviceCount].PullUpOption = false;
         Device[deviceCount].InverseLogicOption = false;
@@ -68,7 +97,16 @@ boolean Plugin_036(byte function, struct EventStruct *event, String& string)
 
     case PLUGIN_WEBFORM_LOAD:
       {
-        byte choice0 = Settings.TaskDevicePluginConfig[event->TaskIndex][0];
+        // Use number 5 to remain compatible with existing configurations,
+        // but the item should be one of the first choices.
+        byte choice5 = PCONFIG(5);
+        String options5[2];
+        options5[0] = F("SSD1306");
+        options5[1] = F("SH1106");
+        int optionValues5[2] = { 1, 2 };
+        addFormSelector(F("Controller"), F("p036_controller"), 2, options5, optionValues5, choice5);
+
+        byte choice0 = PCONFIG(0);
         /*
         String options0[2];
         options0[0] = F("3C");
@@ -77,25 +115,25 @@ boolean Plugin_036(byte function, struct EventStruct *event, String& string)
         int optionValues0[2];
         optionValues0[0] = 0x3C;
         optionValues0[1] = 0x3D;
-        addFormSelectorI2C(string, F("plugin_036_adr"), 2, optionValues0, choice0);
+        addFormSelectorI2C(F("p036_adr"), 2, optionValues0, choice0);
 
-        byte choice1 = Settings.TaskDevicePluginConfig[event->TaskIndex][1];
+        byte choice1 = PCONFIG(1);
         String options1[2];
         options1[0] = F("Normal");
         options1[1] = F("Rotated");
         int optionValues1[2] = { 1, 2 };
-        addFormSelector(string, F("Rotation"), F("plugin_036_rotate"), 2, options1, optionValues1, choice1);
+        addFormSelector(F("Rotation"), F("p036_rotate"), 2, options1, optionValues1, choice1);
 
-        byte choice2 = Settings.TaskDevicePluginConfig[event->TaskIndex][2];
+        byte choice2 = PCONFIG(2);
         String options2[4];
-        options2[0] = F("1");
-        options2[1] = F("2");
-        options2[2] = F("3");
-        options2[3] = F("4");
-        int optionValues2[4] = { 1, 2, 3, 4 };
-        addFormSelector(string, F("Lines per Frame"), F("plugin_036_nlines"), 4, options2, optionValues2, choice2);
+        int optionValues2[4];
+        for (int i = 0; i < 4; ++i) {
+          options2[i] = String(i + 1);
+          optionValues2[i] = i + 1;
+        }
+        addFormSelector(F("Lines per Frame"), F("p036_nlines"), 4, options2, optionValues2, choice2);
 
-        byte choice3 = Settings.TaskDevicePluginConfig[event->TaskIndex][3];
+        byte choice3 = PCONFIG(3);
         String options3[5];
         options3[0] = F("Very Slow");
         options3[1] = F("Slow");
@@ -108,19 +146,29 @@ boolean Plugin_036(byte function, struct EventStruct *event, String& string)
         optionValues3[2] = 4;
         optionValues3[3] = 8;
         optionValues3[4] = 32;
-        addFormSelector(string, F("Scroll"), F("plugin_036_scroll"), 5, options3, optionValues3, choice3);
-
-        char deviceTemplate[Nlines][32];
-        LoadCustomTaskSettings(event->TaskIndex, (byte*)&deviceTemplate, sizeof(deviceTemplate));
-
-        for (byte varNr = 0; varNr < Nlines; varNr++)
+        addFormSelector(F("Scroll"), F("p036_scroll"), 5, options3, optionValues3, choice3);
+        Plugin_036_loadDisplayLines(event->TaskIndex);
+        for (byte varNr = 0; varNr < P36_Nlines; varNr++)
         {
-        	addFormTextBox(string, String(F("Line ")) + (varNr + 1), String(F("Plugin_036_template")) + (varNr + 1), deviceTemplate[varNr], 32);
+          addFormTextBox(String(F("Line ")) + (varNr + 1), String(F("p036_template")) + (varNr + 1), P036_displayLines[varNr], P36_Nchars);
         }
 
-        addFormPinSelect(string, F("Display button"), F("taskdevicepin3"), Settings.TaskDevicePin3[event->TaskIndex]);
+        // FIXME TD-er: Why is this using pin3 and not pin1? And why isn't this using the normal pin selection functions?
+        addFormPinSelect(F("Display button"), F("taskdevicepin3"), CONFIG_PIN3);
 
-        addFormNumericBox(string, F("Display Timeout"), F("plugin_036_timer"), Settings.TaskDevicePluginConfig[event->TaskIndex][4]);
+        addFormNumericBox(F("Display Timeout"), F("p036_timer"), PCONFIG(4));
+
+        byte choice6 = PCONFIG(6);
+        if (choice6 == 0) choice6 = P36_CONTRAST_HIGH;
+        String options6[3];
+        options6[0] = F("Low");
+        options6[1] = F("Medium");
+        options6[2] = F("High");
+        int optionValues6[3];
+        optionValues6[0] = P36_CONTRAST_LOW;
+        optionValues6[1] = P36_CONTRAST_MED;
+        optionValues6[2] = P36_CONTRAST_HIGH;
+        addFormSelector(F("Contrast"), F("p036_contrast"), 3, options6, optionValues6, choice6);
 
         success = true;
         break;
@@ -128,83 +176,116 @@ boolean Plugin_036(byte function, struct EventStruct *event, String& string)
 
     case PLUGIN_WEBFORM_SAVE:
       {
-        Settings.TaskDevicePluginConfig[event->TaskIndex][0] = getFormItemInt(F("plugin_036_adr"));
-        Settings.TaskDevicePluginConfig[event->TaskIndex][1] = getFormItemInt(F("plugin_036_rotate"));
-        Settings.TaskDevicePluginConfig[event->TaskIndex][2] = getFormItemInt(F("plugin_036_nlines"));
-        Settings.TaskDevicePluginConfig[event->TaskIndex][3] = getFormItemInt(F("plugin_036_scroll"));
-        Settings.TaskDevicePluginConfig[event->TaskIndex][4] = getFormItemInt(F("plugin_036_timer"));
+        //update now
+        schedule_task_device_timer(event->TaskIndex,
+           millis() + (Settings.TaskDeviceTimer[event->TaskIndex] * 1000));
+        frameCounter=0;
 
-        String argName;
+        PCONFIG(0) = getFormItemInt(F("p036_adr"));
+        PCONFIG(1) = getFormItemInt(F("p036_rotate"));
+        PCONFIG(2) = getFormItemInt(F("p036_nlines"));
+        PCONFIG(3) = getFormItemInt(F("p036_scroll"));
+        PCONFIG(4) = getFormItemInt(F("p036_timer"));
+        PCONFIG(5) = getFormItemInt(F("p036_controller"));
+        PCONFIG(6) = getFormItemInt(F("p036_contrast"));
 
-        char deviceTemplate[Nlines][32];
-        for (byte varNr = 0; varNr < Nlines; varNr++)
+        String error;
+        char P036_deviceTemplate[P36_Nlines][P36_Nchars];
+        for (byte varNr = 0; varNr < P36_Nlines; varNr++)
         {
-          argName = F("Plugin_036_template");
+          String argName = F("p036_template");
           argName += varNr + 1;
-          strncpy(deviceTemplate[varNr], WebServer.arg(argName).c_str(), sizeof(deviceTemplate[varNr]));
+          if (!safe_strncpy(P036_deviceTemplate[varNr], WebServer.arg(argName), P36_Nchars)) {
+            error += getCustomTaskSettingsError(varNr);
+          }
         }
-
-        SaveCustomTaskSettings(event->TaskIndex, (byte*)&deviceTemplate, sizeof(deviceTemplate));
-
+        if (error.length() > 0) {
+          addHtmlError(error);
+        }
+        SaveCustomTaskSettings(event->TaskIndex, (byte*)&P036_deviceTemplate, sizeof(P036_deviceTemplate));
+        // After saving, make sure the active lines are updated.
+        Plugin_036_loadDisplayLines(event->TaskIndex);
         success = true;
         break;
       }
 
     case PLUGIN_INIT:
       {
+        lastWiFiState = P36_WIFI_STATE_UNSET;
         // Load the custom settings from flash
-        char deviceTemplate[Nlines][32];
-        LoadCustomTaskSettings(event->TaskIndex, (byte*)&deviceTemplate, sizeof(deviceTemplate));
-
-        int OLED_address = Settings.TaskDevicePluginConfig[event->TaskIndex][0];
+        Plugin_036_loadDisplayLines(event->TaskIndex);
 
         //      Init the display and turn it on
-        if (!display)
-          display = new SSD1306(0, 0, 0);
-        display->init(OLED_address);		// call to local override of init function
+        if (display)
+        {
+          display->end();
+          delete display;
+        }
+
+        uint8_t OLED_address = PCONFIG(0);
+        if (PCONFIG(5) == 1) {
+          display = new SSD1306Wire(OLED_address, Settings.Pin_i2c_sda, Settings.Pin_i2c_scl);
+        } else {
+          display = new SH1106Wire(OLED_address, Settings.Pin_i2c_sda, Settings.Pin_i2c_scl);
+        }
+        display->init();		// call to local override of init function
         display->displayOn();
+
+        uint8_t OLED_contrast = PCONFIG(6);
+        P36_setContrast(OLED_contrast);
 
         //      Set the initial value of OnOff to On
         UserVar[event->BaseVarIndex] = 1;
 
         //      flip screen if required
-        if (Settings.TaskDevicePluginConfig[event->TaskIndex][1] == 2)display->flipScreenVertically();
+        if (PCONFIG(1) == 2)display->flipScreenVertically();
 
         //      Display the device name, logo, time and wifi
-        display_espname();
+        display_header();
         display_logo();
-        display_time();
-
-        int nbars = (WiFi.RSSI() + 100) / 8;
-        display_wifibars(105, 0, 15, 10, 5, nbars);
-
         display->display();
 
         //      Set up the display timer
-        displayTimer = Settings.TaskDevicePluginConfig[event->TaskIndex][4];
+        displayTimer = PCONFIG(4);
 
-        if (Settings.TaskDevicePin3[event->TaskIndex] != -1)
+        if (CONFIG_PIN3 != -1)
         {
-          pinMode(Settings.TaskDevicePin3[event->TaskIndex], INPUT_PULLUP);
+          pinMode(CONFIG_PIN3, INPUT_PULLUP);
         }
 
-        //		Initialize frame counter
+        //    Initialize frame counter
         frameCounter = 0;
+        nrFramesToDisplay = 1;
+        currentFrameToDisplay = 0;
 
         success = true;
         break;
       }
 
+    case PLUGIN_EXIT:
+      {
+          if (display)
+          {
+            display->end();
+            delete display;
+            display=NULL;
+          }
+          for (byte varNr = 0; varNr < P36_Nlines; varNr++) {
+            P036_displayLines[varNr] = "";
+          }
+          break;
+      }
+
     // Check frequently to see if we have a pin signal to switch on display
     case PLUGIN_TEN_PER_SECOND:
       {
-        if (Settings.TaskDevicePin3[event->TaskIndex] != -1)
+        if (CONFIG_PIN3 != -1)
         {
-          if (!digitalRead(Settings.TaskDevicePin3[event->TaskIndex]))
+          if (!digitalRead(CONFIG_PIN3))
           {
             display->displayOn();
             UserVar[event->BaseVarIndex] = 1;      //  Save the fact that the display is now ON
-            displayTimer = Settings.TaskDevicePluginConfig[event->TaskIndex][4];
+            displayTimer = PCONFIG(4);
           }
         }
         break;
@@ -223,6 +304,13 @@ boolean Plugin_036(byte function, struct EventStruct *event, String& string)
             UserVar[event->BaseVarIndex] = 0;      //  Save the fact that the display is now OFF
           }
         }
+        if (UserVar[event->BaseVarIndex] == 1) {
+          // Display is on.
+          if (display && display_wifibars()) {
+            // WiFi symbol was updated.
+            display->display();
+          }
+        }
 
         success = true;
         break;
@@ -230,37 +318,37 @@ boolean Plugin_036(byte function, struct EventStruct *event, String& string)
 
     case PLUGIN_READ:
       {
-        char deviceTemplate[Nlines][32];
-        LoadCustomTaskSettings(event->TaskIndex, (byte*)&deviceTemplate, sizeof(deviceTemplate));
-
         // Clear the init screen if this is the first call
-        if (firstcall)
-        {
-          display->clear();
-          firstcall = false;
-        }
+        // if (firstcall)
+        // {
+        //   display->clear();
+        //   firstcall = false;
+        // }
 
         //      Define Scroll area layout
-        linesPerFrame = Settings.TaskDevicePluginConfig[event->TaskIndex][2];
-        NFrames = Nlines / linesPerFrame;
+        linesPerFrame = PCONFIG(2);
+        NFrames = P36_Nlines / linesPerFrame;
 
         //      Now create the string for the outgoing and incoming frames
-        String tmpString[4];
+        String tmpString;
+        tmpString.reserve(P36_Nchars);
         String newString[4];
         String oldString[4];
 
         //      Construct the outgoing string
         for (byte i = 0; i < linesPerFrame; i++)
         {
-          tmpString[i] = deviceTemplate[(linesPerFrame * frameCounter) + i];
-          oldString[i] = parseTemplate(tmpString[i], 20);
+          tmpString = P036_displayLines[(linesPerFrame * frameCounter) + i];
+          oldString[i] = P36_parseTemplate(tmpString, 20);
           oldString[i].trim();
         }
 
         // now loop round looking for the next frame with some content
-        int tlen = 0;
+        //   skip this frame if all lines in frame are blank
+        // - we exit the while loop if any line is not empty
+        boolean foundText = false;
         int ntries = 0;
-        while (tlen == 0) {
+        while (!foundText) {
 
           //        Stop after framecount loops if no data found
           ntries += 1;
@@ -268,35 +356,36 @@ boolean Plugin_036(byte function, struct EventStruct *event, String& string)
 
           //        Increment the frame counter
           frameCounter = frameCounter + 1;
-          if ( frameCounter > NFrames - 1) frameCounter = 0;
+          if ( frameCounter > NFrames - 1) {
+            frameCounter = 0;
+            currentFrameToDisplay = 0;
+          }
 
           //        Contruct incoming strings
           for (byte i = 0; i < linesPerFrame; i++)
           {
-            tmpString[i] = deviceTemplate[(linesPerFrame * frameCounter) + i];
-            newString[i] = parseTemplate(tmpString[i], 20);
+            tmpString = P036_displayLines[(linesPerFrame * frameCounter) + i];
+            newString[i] = P36_parseTemplate(tmpString, 20);
             newString[i].trim();
+            if (newString[i].length() > 0) foundText = true;
           }
-
-          //      skip this frame if all lines in frame are blank - we exit the while loop if tlen is not zero
-          tlen = 0;
-          for (byte i = 0; i < linesPerFrame; i++)
-          {
-            tlen += newString[i].length();
+          if (foundText) {
+            if (frameCounter != 0) {
+              ++currentFrameToDisplay;
+            }
           }
+        }
+        if ((currentFrameToDisplay + 1) > nrFramesToDisplay) {
+          nrFramesToDisplay = currentFrameToDisplay + 1;
         }
 
         //      Update display
-        display_time();
-
-        int nbars = (WiFi.RSSI() + 100) / 8;
-        display_wifibars(105, 0, 15, 10, 5, nbars);
-
-        display_espname();
-        display_indicator(frameCounter, NFrames);
+        display_header();
+        display_indicator(currentFrameToDisplay, nrFramesToDisplay);
+//        display_indicator(frameCounter, NFrames);
         display->display();
 
-        int scrollspeed = Settings.TaskDevicePluginConfig[event->TaskIndex][3];
+        int scrollspeed = PCONFIG(3);
         display_scroll(oldString, newString, linesPerFrame, scrollspeed);
 
         success = true;
@@ -309,15 +398,21 @@ boolean Plugin_036(byte function, struct EventStruct *event, String& string)
         int argIndex = tmpString.indexOf(',');
         if (argIndex)
           tmpString = tmpString.substring(0, argIndex);
-        if (tmpString.equalsIgnoreCase(F("OLEDFRAMEDCMD")))
+        if (tmpString.equalsIgnoreCase(F("OLEDFRAMEDCMD")) && display)
         {
           success = true;
           argIndex = string.lastIndexOf(',');
           tmpString = string.substring(argIndex + 1);
           if (tmpString.equalsIgnoreCase(F("Off")))
-            display->displayOff();
+            P36_setContrast(P36_CONTRAST_OFF);
           else if (tmpString.equalsIgnoreCase(F("On")))
             display->displayOn();
+          else if (tmpString.equalsIgnoreCase(F("Low")))
+            P36_setContrast(P36_CONTRAST_LOW);
+          else if (tmpString.equalsIgnoreCase(F("Med")))
+            P36_setContrast(P36_CONTRAST_MED);
+          else if (tmpString.equalsIgnoreCase(F("High")))
+            P36_setContrast(P36_CONTRAST_HIGH);
         }
         break;
       }
@@ -326,10 +421,89 @@ boolean Plugin_036(byte function, struct EventStruct *event, String& string)
   return success;
 }
 
+// Set the display contrast
+// really low brightness & contrast: contrast = 10, precharge = 5, comdetect = 0
+// normal brightness & contrast:  contrast = 100
+void P36_setContrast(uint8_t OLED_contrast) {
+  char contrast = 100;
+  char precharge = 241;
+  char comdetect = 64;
+  switch (OLED_contrast) {
+    case P36_CONTRAST_OFF:
+      if (display) {
+        display->displayOff();
+      }
+      return;
+    case P36_CONTRAST_LOW:
+      contrast = 10; precharge = 5; comdetect = 0;
+      break;
+    case P36_CONTRAST_MED:
+      contrast = P36_CONTRAST_MED; precharge = 0x1F; comdetect = 64;
+      break;
+    case P36_CONTRAST_HIGH:
+    default:
+      contrast = P36_CONTRAST_HIGH; precharge = 241; comdetect = 64;
+      break;
+  }
+  if (display) {
+    display->displayOn();
+    display->setContrast(contrast, precharge, comdetect);
+  }
+}
+
+// Perform some specific changes for OLED display
+String P36_parseTemplate(String &tmpString, byte lineSize) {
+  String result = parseTemplate(tmpString, lineSize);
+  // OLED lib uses this routine to convert UTF8 to extended ASCII
+  // http://playground.arduino.cc/Main/Utf8ascii
+  // Attempt to display euro sign (FIXME)
+  /*
+  const char euro[4] = {0xe2, 0x82, 0xac, 0}; // Unicode euro symbol
+  const char euro_oled[3] = {0xc2, 0x80, 0}; // Euro symbol OLED display font
+  result.replace(euro, euro_oled);
+  */
+/*
+  if (tmpString.indexOf('{') != -1) {
+    String log = F("Gijs: '");
+    log += tmpString;
+    log += F("'  hex:");
+    for (int i = 0; i < tmpString.length(); ++i) {
+      log += ' ';
+      log += String(tmpString[i], HEX);
+    }
+    log += F(" out hex:");
+    for (int i = 0; i < result.length(); ++i) {
+      log += ' ';
+      log += String(result[i], HEX);
+    }
+    addLog(LOG_LEVEL_INFO, log);
+  }
+*/
+  return result;
+}
+
 // The screen is set up as 10 rows at the top for the header, 10 rows at the bottom for the footer and 44 rows in the middle for the scroll region
 
+void display_header() {
+  static boolean showWiFiName = true;
+  if (showWiFiName && (WiFiConnected()) ) {
+    String newString = WiFi.SSID();
+    newString.trim();
+    display_title(newString);
+  } else {
+    String dtime = F("%sysname%");
+    String newString = parseTemplate(dtime, 10);
+    newString.trim();
+    display_title(newString);
+  }
+  showWiFiName = !showWiFiName;
+  // Display time and wifibars both clear area below, so paint them after the title.
+  display_time();
+  display_wifibars();
+}
+
 void display_time() {
-  String dtime = "%systime%";
+  String dtime = F("%systime%");
   String newString = parseTemplate(dtime, 10);
   display->setTextAlignment(TEXT_ALIGN_LEFT);
   display->setFont(ArialMT_Plain_10);
@@ -339,18 +513,24 @@ void display_time() {
   display->drawString(0, 0, newString.substring(0, 5));
 }
 
-void display_espname() {
-  String dtime = "%sysname%";
-  String newString = parseTemplate(dtime, 10);
-  newString.trim();
+void display_title(String& title) {
   display->setTextAlignment(TEXT_ALIGN_CENTER);
   display->setFont(ArialMT_Plain_10);
-  display->drawString(64, 0, newString);
+  display->setColor(BLACK);
+  display->fillRect(0, 0, 128, 13); // Underscores use a extra lines, clear also.
+  display->setColor(WHITE);
+  display->drawString(64, 0, title);
 }
 
 void display_logo() {
-  // draw an xbm image.
-  display->drawXbm(34, 14, WiFi_Logo_width, WiFi_Logo_height, WiFi_Logo_bits);
+  display->setTextAlignment(TEXT_ALIGN_LEFT);
+  display->setFont(ArialMT_Plain_16);
+  display->setColor(BLACK);
+  display->fillRect(0, 14, 128, 64);
+  display->setColor(WHITE);
+  display->drawString(65, 15, F("ESP"));
+  display->drawString(65, 34, F("Easy"));
+  display->drawXbm(24, 14, espeasy_logo_width, espeasy_logo_height, espeasy_logo_bits);
 }
 
 // Draw the frame position
@@ -363,8 +543,10 @@ void display_indicator(int iframe, int frameCount) {
   display->fillRect(0, 54, 128, 10);
   display->setColor(WHITE);
 
-  // Display chars as required
+  // Only display when there is something to display.
+  if (frameCount <= 1) return;
 
+  // Display chars as required
   for (byte i = 0; i < frameCount; i++) {
     const char *image;
     if (iframe == i) {
@@ -380,9 +562,16 @@ void display_indicator(int iframe, int frameCount) {
     // I would like a margin of 20 pixels on each side of the indicator.
     // Therefore the width of the indicator should be 128-40=88 and so space between indicator dots is 88/(framecount-1)
     // The width of the display is 128 and so the first dot must be at x=20 if it is to be centred at 64
-
+    const int number_spaces = frameCount - 1;
+    if (number_spaces <= 0)
+      return;
     int margin = 20;
-    int spacing = (128 - 2 * margin) / (frameCount - 1);
+    int spacing = (128 - 2 * margin) / number_spaces;
+    // Now apply some max of 30 pixels between the indicators and center the row of indicators.
+    if (spacing > 30) {
+      spacing = 30;
+      margin = (128 - number_spaces * spacing) / 2;
+    }
 
     x = margin + (spacing * i);
     display->drawXbm(x, y, 8, 8, image);
@@ -413,7 +602,7 @@ void display_scroll(String outString[], String inString[], int nlines, int scrol
 
   if (nlines == 3)
   {
-    display->setFont(Dialog_Plain_12);
+    display->setFont(Dialog_plain_12);
     ypos[0] = 13;
     ypos[1] = 25;
     ypos[2] = 37;
@@ -452,32 +641,53 @@ void display_scroll(String outString[], String inString[], int nlines, int scrol
 
     display->display();
 
-    //delay(2);
-    backgroundtasks();
+    delay(2);
+    //NO, dont use background stuff, causes crashes in this plugin:
+    // /backgroundtasks();
   }
 }
 
-//Draw Signal Strength Bars
-void display_wifibars(int x, int y, int size_x, int size_y, int nbars, int nbars_filled) {
+//Draw Signal Strength Bars, return true when there was an update.
+bool display_wifibars() {
+  const bool connected = WiFiConnected();
+  const int nbars_filled = (WiFi.RSSI() + 100) / 8;
+  const int newState = connected ? nbars_filled : P36_WIFI_STATE_UNSET;
+  if (newState == lastWiFiState)
+    return false; // nothing to do.
 
-  //	x,y are the x,y locations
-  //	sizex,sizey are the sizes (should be a multiple of the number of bars)
-  //	nbars is the number of bars and nbars_filled is the number of filled bars.
+  int x = 105;
+  int y = 0;
+  int size_x = 15;
+  int size_y = 10;
+  int nbars = 5;
+  int16_t width = (size_x / nbars);
+  size_x = width * nbars - 1; // Correct for round errors.
 
-  //	We leave a 1 pixel gap between bars
+  //  x,y are the x,y locations
+  //  sizex,sizey are the sizes (should be a multiple of the number of bars)
+  //  nbars is the number of bars and nbars_filled is the number of filled bars.
 
-  for (byte ibar = 1; ibar < nbars + 1; ibar++) {
-
-    display->setColor(BLACK);
-    display->fillRect(x + (ibar - 1)*size_x / nbars, y, size_x / nbars, size_y);
-    display->setColor(WHITE);
-
-    if (ibar <= nbars_filled) {
-      display->fillRect(x + (ibar - 1)*size_x / nbars, y + (nbars - ibar)*size_y / nbars, (size_x / nbars) - 1, size_y * ibar / nbars);
+  //  We leave a 1 pixel gap between bars
+  display->setColor(BLACK);
+  display->fillRect(x , y, size_x, size_y);
+  display->setColor(WHITE);
+  if (WiFiConnected()) {
+    for (byte ibar = 0; ibar < nbars; ibar++) {
+      int16_t height = size_y * (ibar + 1) / nbars;
+      int16_t xpos = x + ibar * width;
+      int16_t ypos = y + size_y - height;
+      if (ibar <= nbars_filled) {
+        // Fill complete bar
+        display->fillRect(xpos, ypos, width - 1, height);
+      } else {
+        // Only draw top and bottom.
+        display->fillRect(xpos, ypos, width - 1, 1);
+        display->fillRect(xpos, y + size_y - 1, width - 1, 1);
+      }
     }
-    else
-    {
-      display->drawRect(x + (ibar - 1)*size_x / nbars, y + (nbars - ibar)*size_y / nbars, (size_x / nbars) - 1, size_y * ibar / nbars);
-    }
+  } else {
+    // Draw a not connected sign.
   }
+  return true;
 }
+#endif // USES_P036
