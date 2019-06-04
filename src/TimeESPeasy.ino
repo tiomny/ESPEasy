@@ -297,7 +297,11 @@ int weekday()
 
 String weekday_str()
 {
-	const int wday(weekday() - 1); // here: Count from Sunday = 0
+	return weekday_str(weekday()-1);
+}
+
+String weekday_str(int wday)
+{
 	const String weekDays = F("SunMonTueWedThuFriSat");
 	return weekDays.substring(wday * 3, wday * 3 + 3);
 }
