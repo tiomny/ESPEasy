@@ -6,8 +6,20 @@
   #define STR(x) STR_HELPER(x)
 #endif
 
-#include <cstddef>
-#include "FS.h"
+#ifdef __GCC__
+#pragma GCC system_header
+#endif
+
+#include <stddef.h>
+
+namespace std
+{
+  using ::ptrdiff_t;
+  using ::size_t;
+}
+
+
+#include <FS.h>
 
 // ********************************************************************************
 // Check struct sizes at compile time
@@ -358,12 +370,12 @@ void check_size() {
 #define CMD_WIFI_DISCONNECT               135
 
 #if defined(PLUGIN_BUILD_TESTING) || defined(PLUGIN_BUILD_DEV)
-  #define DEVICES_MAX                      85
+  #define DEVICES_MAX                      95
 #else
   #ifdef ESP32
-    #define DEVICES_MAX                      75
+    #define DEVICES_MAX                      85
   #else
-    #define DEVICES_MAX                      50
+    #define DEVICES_MAX                      60
   #endif
 #endif
 
@@ -521,8 +533,11 @@ bool showSettingsFileLayout = false;
 #include "Custom.h"
 #endif
 
+#include "define_plugin_sets.h"
 #include "WebStaticData.h"
 #include "ESPEasyTimeTypes.h"
+#include "StringProviderTypes.h"
+#include "ESPeasySerial.h"
 #include "I2CTypes.h"
 #include <I2Cdev.h>
 #include <map>
@@ -567,10 +582,18 @@ bool showSettingsFileLayout = false;
   extern "C" {
   #include "spi_flash.h"
   }
-  extern "C" uint32_t _SPIFFS_start;
-  extern "C" uint32_t _SPIFFS_end;
-  extern "C" uint32_t _SPIFFS_page;
-  extern "C" uint32_t _SPIFFS_block;
+  #ifdef CORE_POST_2_6_0
+    extern "C" uint32_t _FS_start;
+    extern "C" uint32_t _FS_end;
+    extern "C" uint32_t _FS_page;
+    extern "C" uint32_t _FS_block;
+  #else
+    extern "C" uint32_t _SPIFFS_start;
+    extern "C" uint32_t _SPIFFS_end;
+    extern "C" uint32_t _SPIFFS_page;
+    extern "C" uint32_t _SPIFFS_block;
+  #endif
+
   #ifdef FEATURE_MDNS
     #include <ESP8266mDNS.h>
   #endif
@@ -632,7 +655,7 @@ ADC_MODE(ADC_VCC);
 #define ESPEASY_WIFI_DISCONNECTED            0
 #define ESPEASY_WIFI_CONNECTED               1
 #define ESPEASY_WIFI_GOT_IP                  2
-#define ESPEASY_WIFI_SERVICES_INITIALIZED    3
+#define ESPEASY_WIFI_SERVICES_INITIALIZED    4
 
 #if defined(ESP32)
 void WiFiEvent(system_event_id_t event, system_event_info_t info);
@@ -640,6 +663,7 @@ void WiFiEvent(system_event_id_t event, system_event_info_t info);
 WiFiEventHandler stationConnectedHandler;
 WiFiEventHandler stationDisconnectedHandler;
 WiFiEventHandler stationGotIpHandler;
+WiFiEventHandler stationModeDHCPTimeoutHandler;
 WiFiEventHandler APModeStationConnectedHandler;
 WiFiEventHandler APModeStationDisconnectedHandler;
 #endif
@@ -1671,7 +1695,7 @@ struct RTCStruct
 {
   RTCStruct() : ID1(0), ID2(0), unused1(false), factoryResetCounter(0),
                 deepSleepState(0), bootFailedCount(0), flashDayCounter(0),
-                flashCounter(0), bootCounter(0) {}
+                flashCounter(0), bootCounter(0), lastMixedSchedulerId(0) {}
   byte ID1;
   byte ID2;
   boolean unused1;
@@ -1681,6 +1705,7 @@ struct RTCStruct
   byte flashDayCounter;
   unsigned long flashCounter;
   unsigned long bootCounter;
+  unsigned long lastMixedSchedulerId;
 } RTC;
 
 int deviceCount = -1;
@@ -1731,6 +1756,8 @@ byte cmd_within_mainloop = 0;
 unsigned long connectionFailures = 0;
 unsigned long wdcounter = 0;
 unsigned long timerAPoff = 0;
+unsigned long timerAPstart = 0;
+unsigned long timerWiFiReconnect = 0;
 unsigned long timerAwakeFromDeepSleep = 0;
 unsigned long last_system_event_run = 0;
 
@@ -1765,6 +1792,7 @@ unsigned long createSystemEventMixedId(PluginPtrType ptr_type, uint16_t crc16);
 
 
 byte lastBootCause = BOOT_CAUSE_MANUAL_REBOOT;
+unsigned long lastMixedSchedulerId_beforereboot = 0;
 
 #if defined(ESP32)
 enum WiFiDisconnectReason
@@ -1843,6 +1871,7 @@ uint8_t  scan_done_number = 0;
 bool processedConnect = true;
 bool processedDisconnect = true;
 bool processedGetIP = true;
+bool processedDHCPTimeout = true;
 bool processedConnectAPmode = true;
 bool processedDisconnectAPmode = true;
 bool processedScanDone = true;
@@ -1865,6 +1894,7 @@ float loop_usec_duration_total = 0.0;
 unsigned long countFindPluginId = 0;
 
 unsigned long dailyResetCounter = 0;
+volatile unsigned long sw_watchdog_callback_count = 0;
 
 String eventBuffer = "";
 
