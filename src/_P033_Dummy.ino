@@ -7,6 +7,9 @@
 #define PLUGIN_ID_033         33
 #define PLUGIN_NAME_033       "Generic - Dummy Device"
 #define PLUGIN_VALUENAME1_033 "Dummy"
+#define P033_VALUE(n)         ExtraTaskSettings.TaskDevicePluginConfigLong[n]
+//PCONFIG_FLOAT(n);   
+//ExtraTaskSettings.TaskDevicePluginConfigLong[n]
 boolean Plugin_033(byte function, struct EventStruct *event, String& string)
 {
   boolean success = false;
@@ -61,6 +64,11 @@ boolean Plugin_033(byte function, struct EventStruct *event, String& string)
       {
         // Do not set the sensor type, or else it will be set for all instances of the Dummy plugin.
         //sensorTypeHelper_setSensorType(event, 0);
+        LoadTaskSettings(event->TaskIndex);
+        for (byte x = 0; x < getValueCountFromSensorType(PCONFIG(0)); x++)
+        {
+          UserVar[event->BaseVarIndex + x] = ul2float(P033_VALUE(x));
+        }
         success = true;
         break;
       }
@@ -87,6 +95,7 @@ boolean Plugin_033(byte function, struct EventStruct *event, String& string)
         {
           if (event->Par1 == event->TaskIndex+1) // make sure that this instance is the target
           {
+            LoadTaskSettings(event->TaskIndex);
             float floatValue=0;
             if (string2float(parseString(string, 4),floatValue))
             {
@@ -100,8 +109,15 @@ boolean Plugin_033(byte function, struct EventStruct *event, String& string)
                 log += floatValue;
                 addLog(LOG_LEVEL_INFO,log);
               }
+              addLog(LOG_LEVEL_INFO, F("debug1"));
+              P033_VALUE(event->Par2-1) = float2ul(floatValue);
+              addLog(LOG_LEVEL_INFO, F("debug2"));
               UserVar[event->BaseVarIndex+event->Par2-1]=floatValue;
+              addLog(LOG_LEVEL_INFO, F("debug3"));
+              SaveTaskSettings(event->TaskIndex);
+              addLog(LOG_LEVEL_INFO, F("debug4"));
               success = true;
+              addLog(LOG_LEVEL_INFO, F("debug5"));
             } else { // float conversion failed!
               if (loglevelActiveFor(LOG_LEVEL_ERROR))
               {
