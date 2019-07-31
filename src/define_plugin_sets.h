@@ -560,14 +560,8 @@ To create/register a plugin, you have to :
     //#define USES_P056   // SDS011-Dust
     //#define USES_P059   // Encoder
 
-<<<<<<< HEAD
     //#define USES_P063   // TTP229_KeyPad
     //#define USES_P079   // Wemos Motoshield
-=======
-    #define USES_P063   // TTP229_KeyPad
-    #define USES_P073   // 7DG
-    #define USES_P079   // Wemos Motoshield
->>>>>>> 1374bb2b5b9649e84c9462435240af8ebaa6d242
 #endif
 
 

@@ -175,7 +175,7 @@ boolean Plugin_243(byte function, struct EventStruct *event, String& string)
 				isDay = ((P243_PERIOD == P243_PERIOD_WEEKLY) & days[weekday()-1]) |
 						((P243_PERIOD == P243_PERIOD_MONTHLY) & days[day()-1]);
 			}
-
+			
 			P243_VAR_RUNNING = 0;
 			if (isDay)
 			{	 
@@ -202,16 +202,16 @@ boolean Plugin_243(byte function, struct EventStruct *event, String& string)
 						log += F(" with value ");
 						log += P243_SETVALUE(x);
 	    		      	addLog(LOG_LEVEL_INFO, log);
-						P243_VAR_RUNNING = 1;
+						P243_VAR_RUNNING = x+1;
 						P243_VAR_RUNVALUE = P243_SETVALUE(x);
-					break;
+						break;
 					}
 				}
 			}
 		}
 
 		//TODO: Fix it
-		if (P243_VAR_RUNNING)
+		if (P243_VAR_RUNNING>0)
 		{
 			UserVar[PCONFIG(0) * VARS_PER_TASK + PCONFIG(1)] = P243_VAR_RUNVALUE;
 			sendData(event);

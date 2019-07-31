@@ -230,7 +230,7 @@ void check_size() {
 #define BUILD_GIT "(custom)"
 #endif
 
-#define MAX_FLASHWRITES_PER_DAY           100 // per 24 hour window
+#define MAX_FLASHWRITES_PER_DAY           10000 // per 24 hour window
 #define INPUT_COMMAND_SIZE                240 // Affects maximum command length in rules and other commands
 // FIXME TD-er: INPUT_COMMAND_SIZE is also used in commands where simply a check for valid parameter is needed
 // and some may need less memory. (which is stack allocated)

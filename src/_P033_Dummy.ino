@@ -7,9 +7,7 @@
 #define PLUGIN_ID_033         33
 #define PLUGIN_NAME_033       "Generic - Dummy Device"
 #define PLUGIN_VALUENAME1_033 "Dummy"
-#define P033_VALUE(n)         ExtraTaskSettings.TaskDevicePluginConfigLong[n]
-//PCONFIG_FLOAT(n);   
-//ExtraTaskSettings.TaskDevicePluginConfigLong[n]
+
 boolean Plugin_033(byte function, struct EventStruct *event, String& string)
 {
   boolean success = false;
@@ -64,10 +62,13 @@ boolean Plugin_033(byte function, struct EventStruct *event, String& string)
       {
         // Do not set the sensor type, or else it will be set for all instances of the Dummy plugin.
         //sensorTypeHelper_setSensorType(event, 0);
-        LoadTaskSettings(event->TaskIndex);
-        for (byte x = 0; x < getValueCountFromSensorType(PCONFIG(0)); x++)
+
+        float[VARS_PER_TASK] savedVars;
+        LoadCustomTaskSettings(event->TaskIndex, (byte *)&savedVars, VARS_PER_TASK*sizeof(float));
+
+        for (byte x = 0; x < VARS_PER_TASK; x++)
         {
-          UserVar[event->BaseVarIndex + x] = ul2float(P033_VALUE(x));
+          UserVar[event->BaseVarIndex + x] = savedVars[x];
         }
         success = true;
         break;
@@ -90,45 +91,43 @@ boolean Plugin_033(byte function, struct EventStruct *event, String& string)
 
     case PLUGIN_WRITE:
       {
-        String command = parseString(string, 1);
-        if (command == F("dummyvalueset"))
+        String tmp = parseString(string, 1);
+        if (tmp == F("dummyvalueset"))
         {
           if (event->Par1 == event->TaskIndex+1) // make sure that this instance is the target
           {
-            LoadTaskSettings(event->TaskIndex);
             float floatValue=0;
             if (string2float(parseString(string, 4),floatValue))
             {
               if (loglevelActiveFor(LOG_LEVEL_INFO))
               {
-                String log = F("Dummy: Index ");
-                log += event->Par1;
-                log += F(" value ");
-                log += event->Par2;
-                log += F(" set to ");
-                log += floatValue;
-                addLog(LOG_LEVEL_INFO,log);
+                tmp = F("Dummy: Index ");
+                tmp += event->Par1;
+                tmp += F(" value ");
+                tmp += event->Par2;
+                tmp += F(" set to ");
+                tmp += floatValue;
+                addLog(LOG_LEVEL_INFO, tmp);
               }
-              addLog(LOG_LEVEL_INFO, F("debug1"));
-              P033_VALUE(event->Par2-1) = float2ul(floatValue);
-              addLog(LOG_LEVEL_INFO, F("debug2"));
+
               UserVar[event->BaseVarIndex+event->Par2-1]=floatValue;
-              addLog(LOG_LEVEL_INFO, F("debug3"));
-              SaveTaskSettings(event->TaskIndex);
-              addLog(LOG_LEVEL_INFO, F("debug4"));
+
+              SaveCustomTaskSettings(event->TaskIndex, (byte *)&UserVar[event->BaseVarIndex], VARS_PER_TASK * sizeof(float));
+
               success = true;
-              addLog(LOG_LEVEL_INFO, F("debug5"));
-            } else { // float conversion failed!
+            }
+            else
+            { // float conversion failed!
               if (loglevelActiveFor(LOG_LEVEL_ERROR))
               {
-                String log = F("Dummy: Index ");
-                log += event->Par1;
-                log += F(" value ");
-                log += event->Par2;
-                log += F(" parameter3: ");
-                log += parseString(string, 4);
-                log += F(" not a float value!");
-                addLog(LOG_LEVEL_ERROR,log);
+                tmp = F("Dummy: Index ");
+                tmp += event->Par1;
+                tmp += F(" value ");
+                tmp += event->Par2;
+                tmp += F(" parameter3: ");
+                tmp += parseString(string, 4);
+                tmp += F(" not a float value!");
+                addLog(LOG_LEVEL_ERROR, tmp);
               }
             }
           }
