@@ -638,6 +638,7 @@ void parseSystemVariables(String& s, boolean useURLencode)
     SMART_REPL_TIME(F("%syssec_d%"), PSTR("%d"), ((hour() * 60) + minute()) * 60 + second());
     SMART_REPL(F("%sysweekday%"),   String(weekday()))
     SMART_REPL(F("%sysweekday_s%"), weekday_str())
+    //
 
     // With leading zero
     SMART_REPL_TIME(F("%sysyears%"),   PSTR("%02d"), year() % 100)
