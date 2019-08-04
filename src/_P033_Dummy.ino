@@ -63,8 +63,6 @@ boolean Plugin_033(byte function, struct EventStruct *event, String& string)
         // Do not set the sensor type, or else it will be set for all instances of the Dummy plugin.
         //sensorTypeHelper_setSensorType(event, 0);
 
-        LoadCustomTaskSettings(event->TaskIndex, (byte *)&UserVar[event->BaseVarIndex], VARS_PER_TASK*sizeof(float));
-
         success = true;
         break;
       }
@@ -92,6 +90,12 @@ boolean Plugin_033(byte function, struct EventStruct *event, String& string)
           SaveCustomTaskSettings(event->TaskIndex, (byte *)&UserVar[event->BaseVarIndex], VARS_PER_TASK * sizeof(float));
           success = true;
         }
+        else if (command == F("load"))
+        {
+          LoadCustomTaskSettings(event->TaskIndex, (byte *)&UserVar[event->BaseVarIndex], VARS_PER_TASK*sizeof(float));
+          success = true;
+        }
+        
         break;
       }
       
