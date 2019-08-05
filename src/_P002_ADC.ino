@@ -183,9 +183,9 @@ float P002_applyCalibration(struct EventStruct *event, float float_value) {
     float adc2 = static_cast<float>(PCONFIG_LONG(1));
     float out1 = PCONFIG_FLOAT(0);
     float out2 = PCONFIG_FLOAT(1);
-    if (adc1 != out1)
+    if (adc1 != adc2)
     {
-      float_value = (float_value - adc1) * (out2 - out1) / (out1 - adc1) + out1;
+      float_value = (float_value - adc1) * (out2 - out1) /(adc2 - adc1) + out1;
     }
   }
   return float_value;
