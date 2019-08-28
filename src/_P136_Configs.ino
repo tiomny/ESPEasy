@@ -9,8 +9,13 @@
 #define PLUGIN_VALUENAME1_136 "Config"
 
 #define P136_CFG_VALUE_COUNT  PCONFIG(0)
+#define P136_CFG_VARIABLE(n)  PCONFIG_FLOAT(n)
 
 #define P136_ID_VALUE_COUNT   "p136_valuecount"
+#define P136_ID_TDVN          "TDVN"
+#define P136_ID_TDVD          "TDVD"
+
+static char P136_PLUGIN_JS[] PROGMEM = {""};
 
 boolean Plugin_136(byte function, struct EventStruct *event, String& string)
 {
@@ -52,43 +57,20 @@ boolean Plugin_136(byte function, struct EventStruct *event, String& string)
       {
         addFormNumericBox(String(F("Number of values")), String(F(P136_ID_VALUE_COUNT)), P136_CFG_VALUE_COUNT, 1, VARS_PER_TASK);
         
-        addFormSubHeader(F("Variables"));
-        html_end_table();
-        html_table_class_normal();
-
-        // table header
-        TXBuffer += F("<TR><TH style='width:30px;' align='center'>#");
-        html_table_header("Name");
-        
-        html_table_header(F("Value"), 30);
-
-      // table body
-      for (byte varNr = 0; varNr < P136_CFG_VALUE_COUNT; varNr++)
-      {
-        html_TR_TD();
-        TXBuffer += varNr + 1;
-        html_TD();
-        String id = F("TDVN"); // ="taskdevicevaluename"
-        id += (varNr + 1);
-        addTextBox(id, ExtraTaskSettings.TaskDeviceValueNames[varNr], NAME_FORMULA_LENGTH_MAX);
-
-        if (Device[DeviceIndex].FormulaOption || Device[DeviceIndex].DecimalsOnly)
-        {
-          html_TD();
-          String id = F("TDVD"); // ="taskdevicevaluedecimals"
-          id += (varNr + 1);
-          addNumericBox(id, ExtraTaskSettings.TaskDeviceValueDecimals[varNr], 0, 6);
-        }
-      }
-
-
         success = true;
         break;
       }
 
     case PLUGIN_WEBFORM_SAVE:
       {
-        pconfig_webformSave(event, 0);
+        P136_CFG_VALUE_COUNT = getFormItemInt(F(P136_ID_VALUE_COUNT));
+        for (byte varNr = 0; varNr < P136_CFG_VALUE_COUNT; varNr++)
+        {
+          id = F(P136_ID_TDVD); // ="taskdevicevaluedecimals"
+          id += (varNr + 1);
+          P136_CFG_VARIABLE(varNr) = getFormItemInt(id);
+        }
+        
         success = true;
         break;
       }

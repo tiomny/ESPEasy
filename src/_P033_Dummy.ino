@@ -8,6 +8,8 @@
 #define PLUGIN_NAME_033       "Generic - Dummy Device"
 #define PLUGIN_VALUENAME1_033 "Dummy"
 
+static char P033_PLUGIN_JS[] PROGMEM = {"<script>"};
+
 boolean Plugin_033(byte function, struct EventStruct *event, String& string)
 {
   boolean success = false;
