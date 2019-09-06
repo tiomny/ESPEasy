@@ -1,4 +1,4 @@
-//ifdef USES_P136
+#ifdef USES_P136
 //#######################################################################################################
 //################################## Plugin 136: Configs ################################################
 //#######################################################################################################
@@ -66,7 +66,7 @@ boolean Plugin_136(byte function, struct EventStruct *event, String& string)
         P136_CFG_VALUE_COUNT = getFormItemInt(F(P136_ID_VALUE_COUNT));
         for (byte varNr = 0; varNr < P136_CFG_VALUE_COUNT; varNr++)
         {
-          id = F(P136_ID_TDVD); // ="taskdevicevaluedecimals"
+          String id = F(P136_ID_TDVD); // ="taskdevicevaluedecimals"
           id += (varNr + 1);
           P136_CFG_VARIABLE(varNr) = getFormItemInt(id);
         }
