@@ -179,22 +179,26 @@ float P002_getOutputValue(struct EventStruct *event, int16_t &raw_value) {
 float P002_applyCalibration(struct EventStruct *event, float float_value) {
   if (PCONFIG(3))   //Calibration?
   {
-    float adc1 = static_cast<float>(PCONFIG_LONG(0));
-    float adc2 = static_cast<float>(PCONFIG_LONG(1));
+    int adc1 = PCONFIG_LONG(0);
+    int adc2 = PCONFIG_LONG(1);
     float out1 = PCONFIG_FLOAT(0);
     float out2 = PCONFIG_FLOAT(1);
     if (adc1 != adc2)
     {
-      float_value = (float_value - adc1) * (out2 - out1) /(adc2 - adc1) + out1;
+      const float normalized = static_cast<float>(float_value - adc1) / static_cast<float>(adc2 - adc1);
+      float_value = normalized * (out2 - out1) + out1;
     }
   }
   return float_value;
 }
 
 uint16_t P002_performRead(struct EventStruct *event) {
-  uint16_t value = 0;
+  // Define it static so we just return the last value when no read can be performed.
+  static uint16_t value = 0;
   #if defined(ESP8266)
+  if (!wifiConnectInProgress) {
     value = analogRead(A0);
+  }
   #endif
   #if defined(ESP32)
     value = analogRead(CONFIG_PIN1);
