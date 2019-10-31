@@ -7,9 +7,6 @@
 #define PLUGIN_ID_033         33
 #define PLUGIN_NAME_033       "Generic - Dummy Device"
 #define PLUGIN_VALUENAME1_033 "Dummy"
-
-static char P033_PLUGIN_JS[] PROGMEM = {"<script>"};
-
 boolean Plugin_033(byte function, struct EventStruct *event, String& string)
 {
   boolean success = false;
@@ -64,7 +61,6 @@ boolean Plugin_033(byte function, struct EventStruct *event, String& string)
       {
         // Do not set the sensor type, or else it will be set for all instances of the Dummy plugin.
         //sensorTypeHelper_setSensorType(event, 0);
-
         success = true;
         break;
       }
