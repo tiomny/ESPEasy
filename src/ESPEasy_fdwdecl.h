@@ -159,6 +159,8 @@ String parseStringKeepCase(const String& string, byte indexFind);
 String parseStringToEnd(const String& string, byte indexFind);
 String parseStringToEndKeepCase(const String& string, byte indexFind);
 
+int parseCommandArgumentInt(const String& string, unsigned int argc);
+
 String describeAllowedIPrange();
 void clearAccessBlock();
 String rulesProcessingFile(const String& fileName, String& event);
@@ -187,5 +189,7 @@ void SendUDPCommand(byte destUnit, const char *data, byte dataLength);
 void printDirectory(File dir, int numTabs);
 
 void delayBackground(unsigned long dsdelay);
+
+void setIntervalTimerOverride(unsigned long id, unsigned long msecFromNow); //implemented in Scheduler.ino
 
 #endif // ESPEASY_FWD_DECL_H
