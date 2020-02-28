@@ -6,6 +6,7 @@
 #include "src/Globals/CRCValues.h"
 #include "src/Globals/Cache.h"
 #include "src/Globals/Device.h"
+#include "src/Globals/CPlugins.h"
 #include "src/Globals/Plugins.h"
 #include "src/Globals/Plugins_other.h"
 #include "src/Globals/RTC.h"
@@ -840,6 +841,39 @@ void parseCommandString(struct EventStruct *event, const String& string)
   event->Par5 = parseCommandArgumentInt(string, 5);
 }
 
+
+
+/********************************************************************************************\
+  Toggle controller enabled state
+  \*********************************************************************************************/
+bool setControllerEnableStatus(controllerIndex_t controllerIndex, bool enabled)
+{
+  if (!validControllerIndex(controllerIndex)) return false;
+  checkRAM(F("setControllerEnableStatus"));
+  // Only enable controller if it has a protocol configured
+  if (Settings.Protocol[controllerIndex] != 0 || !enabled) {
+    Settings.ControllerEnabled[controllerIndex] = enabled;
+    return true;
+  }
+  return false;
+}
+
+/********************************************************************************************\
+  Toggle task enabled state
+  \*********************************************************************************************/
+bool setTaskEnableStatus(taskIndex_t taskIndex, bool enabled)
+{
+  if (!validTaskIndex(taskIndex)) return false;
+  checkRAM(F("setTaskEnableStatus"));
+  // Only enable task if it has a Plugin configured
+  if (validPluginID(Settings.TaskDeviceNumber[taskIndex]) || !enabled) {
+    Settings.TaskDeviceEnabled[taskIndex] = enabled;
+    return true;
+  }
+  return false;
+}
+
+
 /********************************************************************************************\
   Clear task settings for given task
   \*********************************************************************************************/
@@ -1507,9 +1541,10 @@ void prepareShutdown()
   process_serialWriteBuffer();
   flushAndDisconnectAllClients();
   saveUserVarToRTC();
-  saveToRTC();
   SPIFFS.end();
   delay(100); // give the node time to flush all before reboot or sleep
+  now();
+  saveToRTC();
 }
 
 /********************************************************************************************\
@@ -1665,9 +1700,10 @@ String parseTemplate_padded(String& tmpString, byte minimal_lineSize, bool useUR
     // This may have taken some time, so call delay()
     delay(0);
   }
-
+  
   // Copy the rest of the string (or all if no replacements were done)
   newString += tmpString.substring(lastStartpos);
+
   checkRAM(F("parseTemplate2"));
 
   // Restore previous loaded taskSettings
@@ -1678,7 +1714,10 @@ String parseTemplate_padded(String& tmpString, byte minimal_lineSize, bool useUR
 
   parseStandardConversions(newString, useURLencode);
 
-    // padding spaces
+  // process other markups as well
+  parse_string_commands(newString); 
+
+  // padding spaces
   while (newString.length() < minimal_lineSize) {
     newString += ' ';
   }
@@ -1761,6 +1800,13 @@ bool findNextValMarkInString(const String& input, int& startpos, int& hashpos, i
   int tmpHashpos = input.indexOf('#', tmpStartpos);
 
   if (tmpHashpos == -1) { return false; }
+  // We found a hash position, check if there is another '[' inbetween.
+  for (int i = tmpStartpos; i < tmpHashpos; ++i) {
+    if (input[i] == '[') {
+      tmpStartpos = i;
+    }
+  }
+
   int tmpEndpos = input.indexOf(']', tmpStartpos);
 
   if (tmpEndpos == -1) { return false; }

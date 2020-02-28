@@ -254,12 +254,16 @@ void setup()
       log = F("INIT : Rebooted from deepsleep #");
       lastBootCause=BOOT_CAUSE_DEEP_SLEEP;
     }
-    else
+    else {
+      restoreLastKnownUnixTime();
       log = F("INIT : Warm boot #");
+    }
 
     log += RTC.bootCounter;
     log += F(" Last Task: ");
     log += decodeSchedulerId(lastMixedSchedulerId_beforereboot);
+    log += F(" Last systime: ");
+    log += RTC.lastSysTime;
   }
   //cold boot (RTC memory empty)
   else
@@ -282,6 +286,7 @@ void setup()
   fileSystemCheck();
   progMemMD5check();
   LoadSettings();
+
   Settings.UseRTOSMultitasking = false; // For now, disable it, we experience heap corruption.
   if (RTC.bootFailedCount > 10 && RTC.bootCounter > 10) {
     byte toDisable = RTC.bootFailedCount - 10;
@@ -554,7 +559,7 @@ void loop()
      addLog(LOG_LEVEL_INFO, F("firstLoopConnectionsEstablished"));
      firstLoop = false;
      timerAwakeFromDeepSleep = millis(); // Allow to run for "awake" number of seconds, now we have wifi.
-     // schedule_all_task_device_timers(); Disabled for now, since we are now using queues for controllers.
+     // schedule_all_task_device_timers(); // Disabled for now, since we are now using queues for controllers.
      if (Settings.UseRules && isDeepSleepEnabled())
      {
         String event = F("System#NoSleep=");
@@ -758,11 +763,8 @@ void run10TimesPerSecond() {
     CPluginCall(CPlugin::Function::CPLUGIN_TEN_PER_SECOND, 0, dummy);
     STOP_TIMER(CPLUGIN_CALL_10PS);
   }
-
-  if (Settings.UseRules)
-  {
-    processNextEvent();
-  }
+  processNextEvent();
+  
   #ifdef USES_C015
   if (WiFiConnected())
       Blynk_Run_c015();
