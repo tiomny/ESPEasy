@@ -81,9 +81,9 @@ String Command_SetDateTime(struct EventStruct *event, const char* Line)
 		sysTime = makeTime(tm);
 		
 	}else  {
-		serialPrintln();
+		// serialPrintln();
 		String result = F("Datetime:");
-		//result += getDateTimeString('-',':',' ');
+		result += getDateTimeString('-',':',' ');
 		return return_result(event, result);
 	}
 	return return_command_success();

@@ -3,12 +3,19 @@
    Time stuff
  \*********************************************************************************************/
 
+#define SECS_PER_MIN  (60UL)
+#define SECS_PER_HOUR (3600UL)
+#define SECS_PER_DAY  (SECS_PER_HOUR * 24UL)
+#define DAYS_PER_WEEK (7UL)
+#define SECS_PER_WEEK (SECS_PER_DAY * DAYS_PER_WEEK)
+#define SECS_PER_YEAR (SECS_PER_WEEK * 52UL)
+#define SECS_YR_2000  (946684800UL) // the time at the start of y2k
+#define LEAP_YEAR(Y) (((1970 + Y) > 0) && !((1970 + Y) % 4) && (((1970 + Y) % 100) || !((1970 + Y) % 400)))
 #include <time.h>
-#include "TimeESPeasy.h"
 
 struct tm tm;
 uint32_t  syncInterval = 3600;       // time sync will be attempted after this many seconds
-// double    sysTime = 0.0;             // Use high resolution double to get better sync between nodes when using NTP
+double    sysTime = 0.0;             // Use high resolution double to get better sync between nodes when using NTP
 uint32_t  prevMillis = 0;
 uint32_t  nextSyncTime = 0;
 double    externalTimeSource = -1.0; // Used to set time from a source other than NTP.
