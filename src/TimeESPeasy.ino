@@ -2,6 +2,7 @@
 /********************************************************************************************\
    Time stuff
  \*********************************************************************************************/
+ 
 #define SECS_PER_MIN  (60UL)
 #define SECS_PER_HOUR (3600UL)
 #define SECS_PER_DAY  (SECS_PER_HOUR * 24UL)
@@ -10,9 +11,7 @@
 #define SECS_PER_YEAR (SECS_PER_WEEK * 52UL)
 #define SECS_YR_2000  (946684800UL) // the time at the start of y2k
 #define LEAP_YEAR(Y) (((1970 + Y) > 0) && !((1970 + Y) % 4) && (((1970 + Y) % 100) || !((1970 + Y) % 400)))
-
 #include <time.h>
-#include "TimeESPeasy.h"
 
 struct tm tm;
 uint32_t  syncInterval = 3600;       // time sync will be attempted after this many seconds
