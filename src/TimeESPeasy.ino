@@ -2,7 +2,7 @@
 /********************************************************************************************\
    Time stuff
  \*********************************************************************************************/
- #define SECS_PER_MIN  (60UL)
+#define SECS_PER_MIN  (60UL)
 #define SECS_PER_HOUR (3600UL)
 #define SECS_PER_DAY  (SECS_PER_HOUR * 24UL)
 #define DAYS_PER_WEEK (7UL)
