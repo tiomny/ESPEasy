@@ -1,4 +1,5 @@
 #ifdef USES_P243
+#include "src/Globals/ESPEasy_time.h"
 //#######################################################################################################
 //#################################### Plugin 243: Schedule #########################################
 //#######################################################################################################
@@ -105,7 +106,7 @@ boolean Plugin_243(byte function, struct EventStruct *event, String& string)
 						if (((x % 8) == 0) & (x /8 > 0)) addHtml(F("</TR><TR>"));
 						addHtml(F("<TD>"));
 						
-						addHtml(P243_PERIOD == P243_PERIOD_WEEKLY ? weekday_str(x) : String(x+1));
+						addHtml(P243_PERIOD == P243_PERIOD_WEEKLY ? ESPEasy_time::weekday_str(x) : String(x+1));
 						addCheckBox(String(F("p243_day")) + (x),days[x]);
 						addHtml(F("</TD>"));
 					}
@@ -136,8 +137,8 @@ boolean Plugin_243(byte function, struct EventStruct *event, String& string)
 
 				for (byte x = 0; x < PLUGIN_243_MAX_SETTINGS; x++)
 				{
-					P243_DT_START(x) = String2Timeint(P243_PERIOD, WebServer.arg(String(F("p243_clock_start")) + (x)));
-					P243_DT_END(x) = String2Timeint(P243_PERIOD, WebServer.arg(String(F("p243_clock_end")) + (x)));
+					P243_DT_START(x) = String2Timeint(P243_PERIOD, web_server.arg(String(F("p243_clock_start")) + (x)));
+					P243_DT_END(x) = String2Timeint(P243_PERIOD, web_server.arg(String(F("p243_clock_end")) + (x)));
 					P243_SETVALUE(x) = getFormItemFloat(String(F("p243_setvalue")) + (x));
 				}
 
@@ -172,14 +173,14 @@ boolean Plugin_243(byte function, struct EventStruct *event, String& string)
 			{
 				bool days[31];
 				LoadClockSet(P243_PERIOD, days, event);
-				isDay = ((P243_PERIOD == P243_PERIOD_WEEKLY) & days[weekday()-1]) |
-						((P243_PERIOD == P243_PERIOD_MONTHLY) & days[day()-1]);
+				isDay = ((P243_PERIOD == P243_PERIOD_WEEKLY) & days[node_time.weekday()-1]) |
+						((P243_PERIOD == P243_PERIOD_MONTHLY) & days[node_time.day()-1]);
 			}
 			
 			P243_VAR_RUNNING = 0;
 			if (isDay)
 			{	 
-				time_t curtime = now();
+				time_t curtime = node_time.now();
 				// if not an exact date - get time of a day
 				if (P243_PERIOD != P243_PERIOD_ONCE) 
 				{
@@ -300,7 +301,7 @@ long String2Timeint(int16_t period, String Timestr)
 String DateTimeintString(int16_t period, long Timeint)
 {
   struct tm tm;
-  breakTime(Timeint, tm);
+  ESPEasy_time::breakTime(Timeint, tm);
 
 	String result;
 
@@ -308,7 +309,7 @@ String DateTimeintString(int16_t period, long Timeint)
 	{
 		case P243_PERIOD_ONCE:
 		{
-			result = getDateTimeString(tm);
+			result = ESPEasy_time::getDateTimeString(tm);
 			break;
 		}
 		case P243_PERIOD_DAILY:
@@ -316,7 +317,7 @@ String DateTimeintString(int16_t period, long Timeint)
 		case P243_PERIOD_MONTHLY: 
 		default:
 		{
-			result = getTimeString(tm, ':', false, true);
+			result = ESPEasy_time::getTimeString(tm, ':', false, true);
 			break;
 		}
 	}
