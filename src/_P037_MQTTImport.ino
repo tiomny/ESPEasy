@@ -3,6 +3,7 @@
 //#################################### Plugin 037: MQTT Import ##########################################
 //#######################################################################################################
 
+
 // Original plugin created by Namirda
 
 // This task reads data from the MQTT Import input stream and saves the value
@@ -10,6 +11,7 @@
 #include "src/Globals/MQTT.h"
 #include "src/Globals/CPlugins.h"
 #include "src/Globals/Plugins.h"
+#include "_Plugin_Helper.h"
 
 #define PLUGIN_037
 #define PLUGIN_ID_037         37
@@ -153,7 +155,7 @@ boolean Plugin_037(byte function, struct EventStruct *event, String& string)
         {
           String argName = F("p037_template");
           argName += varNr + 1;
-          if (!safe_strncpy(deviceTemplate[varNr], WebServer.arg(argName).c_str(), sizeof(deviceTemplate[varNr]))) {
+          if (!safe_strncpy(deviceTemplate[varNr], web_server.arg(argName).c_str(), sizeof(deviceTemplate[varNr]))) {
             error += getCustomTaskSettingsError(varNr);
           }
         }

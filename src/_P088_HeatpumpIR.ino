@@ -44,6 +44,7 @@
  */
 
 #include <HeatpumpIRFactory.h>
+#include "_Plugin_Helper.h"
 
 IRSenderIRremoteESP8266 *Plugin_088_irSender = NULL;
 int panasonicCKPTimer = 0;
@@ -161,9 +162,9 @@ boolean Plugin_088(byte function, struct EventStruct *event, String& string)
           if (GetArgv(string.c_str(), TmpStr1, 7)) vDir = str2int(TmpStr1.c_str());
           if (GetArgv(string.c_str(), TmpStr1, 8)) hDir = str2int(TmpStr1.c_str());
 #ifdef IR_SEND_TIME
-          sendHour = hour();
-          sendMinute = minute();
-          sendWeekday = weekday();
+          sendHour = node_time.hour();
+          sendMinute = node_time.minute();
+          sendWeekday = node_time.weekday();
 #endif
           HeatpumpIR *heatpumpIR = HeatpumpIRFactory::create(heatpumpModel.c_str());
 
