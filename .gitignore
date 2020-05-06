@@ -50,3 +50,5 @@ tools/vagrant/Custom.h
 
 tools/vagrant/pio_envlist.txt
 
+
+build_output/
