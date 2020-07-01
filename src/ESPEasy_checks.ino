@@ -1,3 +1,5 @@
+#include "ESPEasy_common.h"
+
 #include "src/DataStructs/NodeStruct.h"
 #include "src/DataStructs/CRCStruct.h"
 #include "src/DataStructs/SettingsStruct.h"
@@ -34,10 +36,10 @@ template<typename T, typename U> constexpr size_t offsetOf(U T::*member)
 void run_compiletime_checks() {
   check_size<CRCStruct,                             204u>();
   check_size<SecurityStruct,                        593u>();
-  const unsigned int SettingsStructSize = (252 + 82 * TASKS_MAX);
+  const unsigned int SettingsStructSize = (276 + 82 * TASKS_MAX);
   check_size<SettingsStruct,                        SettingsStructSize>();
   check_size<ControllerSettingsStruct,              820u>();
-  #ifndef NOTIFIER_SET_NONE
+  #ifdef USES_NOTIFIER
   check_size<NotificationSettingsStruct,            996u>();
   #endif
   check_size<ExtraTaskSettingsStruct,               472u>();
@@ -49,7 +51,7 @@ void run_compiletime_checks() {
   check_size<LogStruct,                             LogStructSize>(); // Is not stored
   check_size<DeviceStruct,                          7u>();
   check_size<ProtocolStruct,                        6u>();
-  #ifndef NOTIFIER_SET_NONE
+  #ifdef USES_NOTIFIER
   check_size<NotificationStruct,                    3u>();
   #endif
   check_size<NodeStruct,                            28u>();
@@ -58,7 +60,7 @@ void run_compiletime_checks() {
   check_size<rulesTimerStatus,                      12u>();
   check_size<portStatusStruct,                      4u>();
   check_size<ResetFactoryDefaultPreference_struct,  4u>();
-  check_size<GpioFactorySettingsStruct,             11u>();
+  check_size<GpioFactorySettingsStruct,             18u>();
   #if defined(USE_NON_STANDARD_24_TASKS) && defined(ESP8266)
     static_assert(TASKS_MAX == 24, "TASKS_MAX invalid size");
   #endif
