@@ -1,4 +1,435 @@
 -------------------------------------------------
+Changes in release mega-20201102 (since mega-20201022)
+-------------------------------------------------
+
+Release date: ma  2 nov 2020 12:59:12 CET
+
+TD-er (41):
+      [Webserver] Move WebServer_xxx.ino to src/WebServer/...cpp
+      [WebServer] Add .h files for moved WebServer_xxx.ino
+      [Cleanup] Move Controller.ino and ESPEasyRules.ino to .cpp/.h
+      [Cleanup] Move ESPEasy_Log.ino and Serial.ino to .cpp/.h
+      [Cleanup] Strip almost all from ESPEasy_fdwdecl.h
+      [Build] Disable Settings Archive on limit build size builds.
+      [Build] Fix build issues reported by Travis
+      [Build] Some extra build issues with specific custom builds
+      [Cleanup] Convert StringProvider.ino to .cpp/.h
+      [Cleanup] Convert ESPEasyStatistics.ino to .cpp/.h
+      [Cleanup] Convert LoRa TTN .ino  to .cpp/.h
+      [Cleanup] Convert Modbus.ino to .cpp/.h
+      [Cleanup]  strip ESPEasy-Globals.h + check #include "ESPEasy_common.h"
+      [Build] Fix missing include for VCC builds
+      [Cleanup] Move enum/define only files to DataTypes & CustomBuild folder
+      [Cleanup] Move _CPluginHelper to src/Helpers/ folder
+      [Cleanup] Rename src/WebServer/WebServer_*  to  src/WebServer/*
+      [Cleanup] Move WiFi/Ethernet code to ESPEasyCore directory
+      [Cleanup] Make sure _Plugin_Helper.h is included before #ifdef USES_xxx
+      [Cleanup] Make sure _Plugin_Helper.h is included before #ifdef USES_xxx (2)
+      Fix dependency in SDM Energy Meter library
+      Fix missing rename of ser/WebServer/WebServer_ includes
+      Fix merge issues after GPIO PR merged
+      [Cleanup] Move ESPeasyGPIO.ino to ESPEasyCore/ESPEasyGPIO.cpp/.h
+      Fix missing include in C005
+      Don't call PLUGIN_WRITE on inactive tasks (#3317)
+      Fix GPIO command from dashboard.esp broken
+      [WiFi] Move global ESPEasy WiFi runtime data to single struct
+      [Build IR] Do not exclude IR lib on Custom build
+      Add custom_IR_ESP8266_4M1M PIO environment
+      [Servo] Log error when servo command is used while servo not in build
+      [WiFi] Move WiFi state logic to WiFiEventData struct
+      [WiFi] Fix recursive calls to WiFiConnected() + limit reconnect rate
+      [WiFi] Fix build issue for _VCC builds
+      [MQTT] Fix gpio command sent from MQTT (#3344)
+      [MQTT] Fix command handling for PiDome MQTT
+      [Task command] Fix taskenable / taskdisable commands
+      [TSL2591] Check sensor before reading + speedup
+      [TSL2591] Perform async reading of sensor prevent blocking calls
+      [TSL2591] Force disable sensor after timeout + log duration
+      [Docs] Describe how to iterate over a lookup table using rules
+
+Thomas (13):
+      Added Wake On LAN Plugin P101
+      Updated Command.rst for Wake On LAN Plugin P101
+      Added Doc files for Wake On LAN Plugin P101
+      Update _plugin_categories.repl
+      Updated ReadTheDocs for P075 Nextion.
+      Update P075 and P079 Plugin Docs
+      Update _P101_WakeOnLan.ino
+      Add WakeOnLan V1.1.6 Library
+      Update _P101_WakeOnLan.ino
+      Rename P101_WakeOnLan.rst to P101.rst
+      Add Doc File Missing in PR #3328
+      Add doc file missing in PR 3328
+      Add missing doc file for PR 3328
+
+stefan (1):
+      [ArduinoIDE] Fix include path for new structure
+
+
+-------------------------------------------------
+Changes in release mega-20201022 (since mega-20201016)
+-------------------------------------------------
+
+Release date: do 22 okt 2020 16:46:23 CEST
+
+Gijs Noorlander (10):
+      Fix merge issue merging GPIO core handling
+      [GPIO core] Fix bool/boolean function declaration.
+      Fix incorrect merge.
+      Fix possible uninitialized current state in GPIO monitoring
+      Fix merge issue due to renamed Command.ino
+      Fix merge issue due to change to EventValueSource::Enum
+      [Commands] Add event value source check for commands
+      Fix merge issue WiFi process disconnect event should not disable webserver
+      Fix merge issues
+      [GPIO] Fix merge issues with recent scheduler changes.
+
+Plebs (26):
+      Moved GPIO commands in the core
+      fixed suggestions made by TD-er
+      deprecating inpuswitchstate
+      Moved GPIO commands in the core
+      fixed suggestions made by TD-er
+      deprecating inpuswitchstate
+      Moved GPIO commands in the core
+      fixed suggestions made by TD-er
+      deprecating inpuswitchstate
+      Merge branch 'new/gpiotimers' of https://github.com/giig1967g/ESPEasy into new/gpiotimers
+      added selective command execution according to source
+      added support for C002 (Domoticz MQTT)
+      added C006, C014 and HTTP support
+      Fixed lowercase bug #2841
+      gpio core commands: fixed couple of bugs
+      gpio core commands: bug fixing
+      added asyncevent in ExecuteCommand_all
+      applied changes requested by TD-er
+      updated chackValidPortRange function
+      fixed function
+      fixed JSON/OK return message in HTTP source
+      fixed SONOFF setup and #2892 bug
+      Fixed merge issues
+      fixed "OK" in JSON in a more elegant way
+      fixing merge issues
+      final clean-up
+
+TD-er (10):
+      Fix merge issues.
+      Uncrustify MH-Z19 code
+      [MH-Z19] Fix ABC not (re)set when filtering not used (#3237)
+      [Domoticz MQTT] Fix Domoticz helper able to send internal commands
+      [Domoticz] Document typical use case linking button + relay + Domoticz
+      [Typo] Replace Celcius with Celsius
+      [Nextion] Fix uninitialized variable warning
+      Don't call PLUGIN_WRITE on inactive tasks (#3317)
+      [Crashinfo] Decode last task before reboot
+      [Crashinfo] Decode intended reboot reason
+
+
+-------------------------------------------------
+Changes in release mega-20201016 (since mega-20201009)
+-------------------------------------------------
+
+Release date: vr 16 okt 2020 23:26:50 CEST
+
+TD-er (7):
+      [LoRaTTN] Add encoder/decoder for unit of measure for AcuDC243
+      [WiFi] Fix WiFi (re)connect issues caused by new WiFi timers
+      [Timing Stats] Add duty cycle column + LoRa TTN on air timings
+      [Syslog] Fix syslog name does not include unit number (#3288)
+      [Docs] Document LoRaWAN TTN dynamic send interval setting
+      [GPS] Add distance counter + distance from ref point
+      [LoRa TTN] Fix decoder issue in GPS data
+
+Ton Huisman (1):
+      [Checks] Check all 4 variable names
+
+uwekaditz (1):
+      [P092] Exception solved
+
+
+-------------------------------------------------
+Changes in release mega-20201009 (since mega-20200929)
+-------------------------------------------------
+
+Release date: vr  9 okt 2020 21:08:39 CEST
+
+TD-er (14):
+      Fix used sensor type on plugins allowing to select output type
+      [Custom build] Custom.h was not always used for factory default settings
+      [ESP32] Add detailed chip info on ESP32
+      [Sysinfo page] Split memory info from basic system info + add for ESP32
+      Document Custom.h alternative for Arduino IDE
+      [Sysinfo page] Hide flash chip ID for ESP32 (not possible to read)
+      [Load] Fix high CPU load introduced by fixing sensorType consistency
+      [Cleanup] Simplify functions to sync sensorType consistency
+      [ESPEasySerial] Make GPIO pins selectabel on ESP32
+      [ESPEasySerial] Fix missed ESPEasy Serial instance build issues.
+      [SendToHTTP] Return command failed if no connection could be made
+      [build] Add define DISABLE_SC16IS752_Serial
+      Add standard conversion for converting int to HEX
+      [LoRaWAN TTN] Add new plugins to packet converter JavaScript
+
+Thomas (1):
+      Updated Docs: P075 Nextion and P079 Motorshield
+
+jimmys01 (1):
+      Update ArduJSON
+
+
+-------------------------------------------------
+Changes in release mega-20200929 (since mega-20200913)
+-------------------------------------------------
+
+Release date: di 29 sep 2020  9:34:42 CEST
+
+André Klein (1):
+      Update README.md
+
+Gijs Noorlander (44):
+      [I2C] multiple instances P047 - Environment - Soil moisture sensor
+      [I2C] Multiple instances P079 - Wemos Motorshield
+      [I2C] Multiple instances P012 - LCD 2004
+      [I2C] Multiple Instances P006 - BMP085/180
+      [I2C] Multiple instances P015 - TSL2561
+      [Cleanup] Cleanup P015
+      [Cleanup] Mark floating point numbers with f to reduce resource usage
+      Add missing float marking
+      Fix compiler issue with incorrect 1000f in P092 DLbus
+      [I2C multiplexer] Cleanup multiplexer code in _Plugin.ino
+      [I2C multiplexer] Further cleanup of code
+      Use new (std::nothrow)
+      Fix compiler warnings for LOLIN_EPD library
+      [I2C] Multiple Instances P022 - PCA9685
+      [P022] Forgot #ifdef USES_P022
+      [I2C] Multiple Instances P023 OLED
+      [Cleanup] No need to call clearPluginTaskData from PLUGIN_EXIT
+      [I2C] Multiple Instances P024 MLX90614
+      [I2C] Multiple Instances P025 ADS1115
+      [I2C] Multiple Instances P027 INA219
+      [I2C] Move I2C.ino to helpers .h/.cpp
+      [I2C] Multiple Instances P032 MS5611
+      [Build] Fix build issues with LOLIN_EPD lib on minimal OTA builds
+      [I2C] Multiple instances P034 DHT12
+      [I2C] Multiple Instances P045 MPU6050
+      [I2C] Multiple Instances P048 Motorshield V2
+      [I2C] Multiple Instances P057 - Display - HT16K33 LED
+      [I2C] Multiple instances P058 - Keypad - HT16K33
+      [I2C] Multiple Instances P060 - Analog input - MCP3221
+      [Cleanup] Shorten member variable names
+      [I2C] Multiple Instances P062 - Keypad - MPR121 Touch
+      [I2C] Multiple Instances  P064 - APDS9960 Gesture
+      [I2C] Multiple Instances P069 - LM75A Temperature Sensor (I2C)
+      [I2C] Multiple instances P072 - Temp/Hum HDC1080 (no changes)
+      [I2C] Multiple instances P083 - SGP30 - Gas
+      [I2C] Multiple Instances P090 - CCS811 Air Quality TVOC/eCO2
+      [Cleanup] Reduce stack usage for P064 in web load function
+      [Cleanup] Use enum class in P023 OLED
+      [Cleanup] Proper initialize all member variables of plugins
+      [Cleanup] Uncrustify P092_DLbus
+      [Cleanup] Use enum class for P036_FramedOLED
+      [Cleanup] Rename member vars of P045 and initialize all members
+      [Cleanup] Rename member + initialize members for P090
+      Add check for AllocatedControllerSettings in storage
+
+TD-er (35):
+      [Docs] Document P048 motorshield commands
+      Add ESP32 PinBootState options + ESP8266 gpio16
+      [Build] Fix compile time check for settings size ESP32
+      [P013 HCSR04] Clarify filter setting in web config
+      [P012 LCD] Add characters used in Polish language
+      [DS2423] Add 1-wire counter
+      [Docs] Add documentation entry for P100 DS2423 1-Wire counter
+      [WiFi] Fix issue where unit no longer considers connected > 25 days
+      [WiFi] Fix some issues where timeouts were incorrectly evaluated
+      [MQTT] Fix disregard retain flag using publish from rules (#3256)
+      [build] Disable P092 and P093 on builds exceeding build size
+      Add function to ask task for valueCount instead of plugin
+      Add function to ask task for VType instead of plugins
+      [ExtraTaskSettings] Make sure the ExtraTaskSettings are active when used
+      Fix compiler issue C016 (incorrect find/replace)
+      Fix P015 TSL2561 PLUGIN_READ return success = true
+      Move output tyle selection load/save to device page handler
+      [Serial] Handle serial config from webpage devices handler
+      Use more logical parameters to query task sensor VType
+      [ESPEasy p2p] Split p2p data structs into C++ objects (#3264)
+      Document the DeviceStruct variables and update _Pxxx_PluginTemplate.ino
+      [Cleanup] Add EventStruct constructor with TaskIndex as parameter
+      [Storage] Make enums used for storage enum class
+      Change CPlugin and NPlugin functions to enum class
+      [Cleanup] Convert Misc.ino to .h/.cpp
+      [Cleanup] Uncrustify Misc.h / Misc.cpp
+      [Cleanup] Remove fwdelc declarations of functions moved to .h/.cpp
+      [Cleanup] Split functions from Misc.cpp/.h
+      [Cleanup] Split even more functions from Mist.cpp/.h
+      Add stubs for new controllers up-to C025
+      [Web Interface] Improve task config consistency + code readability
+      [P039 Thermocouple] Add FIXME to remove unneeded strings.
+      [Arduino IDE] Document how to build using Custom.h in Arduino IDE
+      [Cleanup] Rename some to clarify msec or usec interval
+      [WiFi] Fix reconnect loop when getting IP or connecting takes a while.
+
+Thomas (4):
+      Update Wemos Motor Shield's ReadtheDocs
+      Update P079_Wemos_Motorshield
+      Updated P079 Motor Shield Plugin
+      Updated P075 Nextion Plugin's Doc Files
+
+Ton Huisman (7):
+      [P095/P096] Allow rotation +270 via cmd mode
+      [SPI] Correct typo in devices list
+      [P095] (Re)move touchscreen stuff There will be a new plugin for XPT2046 touchscreen Setting wasn't used here anyway
+      [P099] Add documentation for Touchscreen - Device Configuration - Setting up Calibration - Configuring Touch objects
+      [P099] Remove wrongly committed files
+      [P099] Remove link from plugin overview docs
+      [P095] [P096] Avoid using unicode in source
+
+stefan (1):
+      [ArduinoIDE] Fix includes
+
+tonhuisman (8):
+      [SPI] Extend SPI interface support in configuration
+      [SPI] Update SPI-based plugin configuration
+      [SPI] Fixed typos in comments...
+      [SPI] Minor corrections
+      [SPI] Remove unneeded comment
+      [SPI] Minor correction, used wrong type
+      [P096] Widen temp settings var from byte to uint16_t
+      [P096] Avoid crash if no eInk display is connected and a yet unhandled command is sent
+
+
+-------------------------------------------------
+Changes in release mega-20200913 (since mega-20200829)
+-------------------------------------------------
+
+Release date: zo 13 sep 2020  0:11:35 CEST
+
+Gijs Noorlander (19):
+      [Build] Change to esp8266/Arduino core 2.7.4
+      [Travis] Also update "core_273" to "core_274" in build names
+      [new new] Prepare for upcoming changes of 'new' in esp8266/Arduino
+      [build] Add build definition for 1M with Serial Switch.
+      [build] Add Stable controller set to hard_LCtech_relay_x2_1M build
+      Include debug logs and other removed features to reduce size LC_TECH_1M
+      [Scheduler] Fix PLUGIN_TIMER_IN not being called (#3247)
+      [Docs] Add some documentation on C011 Generic HTTP Advanced
+      [HTTP Advanced] Do not percent-encode body  (#1306)
+      [HTTP Advanced] Optimize load/save settings + add send binary option.
+      [Cleanup] Reduce memory usage on load/save C018 LoRaWAN RN2483 controller
+      [RN2483] Call LoRaWAN module reset  when LoRaWAN stack hangs (#3225 )
+      [C011] Use ESP8266HTTPClient library
+      [C011] Fix build issue for older ESP8266 core versions
+      [Travis] Disable core 2.4.2 builds as Travis can't install it anymore
+      [C011] Improve logging + connection tracking.
+      [C011] Split multiline headers + also parse url
+      [Cleanup] Reduce memory usage when using ControllerSettings struct
+      [VCC Build] Strip Servo, Blynk and Zabbix from test build to make it fit.
+
+Max Prokhorov (3):
+      == INFINITY / NAN are bogus
+      Update _P005_DHT.ino
+      typo
+
+TD-er (14):
+      Add gitpod config
+      Sanitize Requirements.txt and switch to Python 3.8
+      Add Gitpod extensions
+      Add VSCode Extentions
+      Change bracket pair colorizer for one that installs in GitPod
+      Remove PlatformIO Extension from GitPod.yml
+      [Arduino IDE] Fix relative path for includes
+      Document hardware bug on Wemos DHT shield (#2569)
+      [ESP32] Core 2.0.0 released
+      [PIO] Set minimum PlatformIO library to 5.0.1
+      Restore Requirements.txt after merge
+      [Gitpod] Use pip3 as we need Python3
+      [Gitpod] Change init: into before:
+      [Gitpod] Apparently Gitpod still uses Python 2.7
+
+Ton Huisman (5):
+      [Checks] Disallow - (dash) in tasknames This may *feel* like a breaking change, but using names with dash(es) doesn't properly work
+      [Checks] Disallow all operators in tasknames
+      [Checks] Update docs, disallow curly braces
+      [Checks] Disallow round braces too
+      [Checks] Update docs
+
+Toni (2):
+      HeatpumpIR 1.0.16 update
+      Build definition for image test_ESP32_IRExt_4M316k:
+
+
+-------------------------------------------------
+Changes in release mega-20200829 (since mega-20200812)
+-------------------------------------------------
+
+Release date: za 29 aug 2020 15:58:42 CEST
+
+Gijs Noorlander (32):
+      [docs] Fix table for P095
+      [docs] Replace code-block:: html with code-block:: none
+      [SI7021] Convert state to enum class
+      [SI7071] Allow multiple instances of the same plugin
+      [SI7071] Add timeout for reading sensor (1 sec)
+      [Build] Add normal_ESP8266_4M1M_VCC env.
+      [ESPEasy p2p] Init node data to 0
+      [Build size] Do not include I2C device names for minimal OTA builds
+      [Controller] Convert controller delay handler to pointer
+      [BME280] Allow to be used with I2C multiplexer
+      [Docs] Add some description for P029 Output Domoticz MQTT helper
+      [I2C] Add PLUGIN_WEBFORM_SHOW_I2C_PARAMS to separate I2C address setup
+      [I2C] Move I2C address selector for all I2C plugins with address field
+      [Cleanup] Uncrustify all I2C plugins
+      Revert changes in P095 as they are already already covered by #3205
+      [I2C multiplexer] Fix build issue on units not using I2C multiplexer
+      [Build] Fix build size exceeded for testing builds
+      [Docs] Add documentation for ESP32 ethernet + missing config page
+      [ESP32 ETH] Add pre-defined Olimex ESP32-EVB config
+      [ESP32 ETH] Fix JSON when Ethernet is enabled.
+      [Docs] Fix images with .PNG instead of .png extension
+      [Sphinx docs] Change deprecated add_stylesheet to add_css_file
+      [Docs] Updated DL-bus documentation as it was hard to find
+      [Ethernet] Create enum class for NetworkMedium
+      [Ethernet] Create enum class for EthClockMode
+      [Ethernet] Create enum class for EthPhyType
+      [Ethernet] Fix UDP p2p when using ethernet.
+      [Cleanup] Try not using default: to let compiler find missing used enums
+      [Factory Defaults] Add Olimex ESP32 GATEWAY definitions
+      Fix default settings for I2C and ethernet
+      Only show matching factory default settings
+      [Ethernet] Switch to WiFi when Ethernet adapter is not found
+
+Michał Obrembski (1):
+      Fixed compile-time defines not working in ESP32 platform
+
+TD-er (2):
+      Fix build issue for P094 CUL reader
+      Fix C002 Domoticz dimmer switch set value (#3230)
+
+Ton Huisman (5):
+      [I2C] Some fixes and improvements
+      [I2C] Add TCA9543a multiplexer, updated docs
+      [I2C Docs] Emphasize configuration with multiplexer
+      [I2C Docs] Add note about multiplexer address
+      [P044] Accept '_' in meter ID
+
+tonhuisman (11):
+      [Docs] Updated commands reference
+      [Docs] Fixed some typos and Sphinx syntax errors
+      [OLED] Don't change shared bus speed
+      [I2C] Implement I2C Multiplexer
+      [I2C] Improve I2C Multiplexer support
+      [I2C] Fix builderror on SettingsStructSize (again)
+      [P008] Fix saving/loading new setting
+      [P008] Fix saving/loading new setting
+      [I2C] Bugfixes and improvements for multiplexer implementation
+      [I2C] Optimizations and improvements
+      [I2C/Doc] Add Hardware page documentation, RTD help button
+
+uwekaditz (2):
+      [P092_DLBus] Move plugin data from lib to PluginStructs
+      Update _P092_DLbus.ino
+
+
+-------------------------------------------------
 Changes in release mega-20200812 (since mega-20200801)
 -------------------------------------------------
 

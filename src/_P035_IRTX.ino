@@ -1,3 +1,4 @@
+#include "_Plugin_Helper.h"
 #ifdef USES_P035
 //#######################################################################################################
 //#################################### Plugin 035: Output IR ############################################
@@ -27,7 +28,7 @@
 //                                                 - "wide"
 // "on" - "off" parameters are:
 // - "power" - "celsius" - "quiet" - "turbo" - "econo" - "light" - "filter" - "clean" - "light" - "beep"
-// If celcius is set to "off" then farenheit will be used
+// If Celsius is set to "off" then farenheit will be used
 // - "sleep" Nr. of mins of sleep mode, or use sleep mode. (<= 0 means off.)
 // - "clock" Nr. of mins past midnight to set the clock to. (< 0 means off.)
 // - "model" . Nr or string representation of the model. Better to find it throught P016 - IR RX (0 means default.)
@@ -36,8 +37,6 @@
 #include <IRac.h>
 #include <IRutils.h>
 #include <IRsend.h>
-
-#include "_Plugin_Helper.h"
 
 #ifdef P016_P035_Extended_AC
 #include <IRac.h>
@@ -116,13 +115,13 @@ boolean Plugin_035(byte function, struct EventStruct *event, String &command)
         }
 
 #ifdef P016_P035_Extended_AC
-        if (Plugin_035_commonAc == 0 && irPin != -1)
+        if (Plugin_035_commonAc == nullptr && irPin != -1)
         {
           addLog(LOG_LEVEL_INFO, F("INIT AC: IR TX"));
           addLog(LOG_LEVEL_INFO, String(F("Supported Protocols by IRSENDAC: ")) + listACProtocols());
-          Plugin_035_commonAc = new IRac(irPin);
+          Plugin_035_commonAc = new (std::nothrow) IRac(irPin);
         }
-        if (Plugin_035_commonAc != 0 && irPin == -1)
+        if (Plugin_035_commonAc != nullptr && irPin == -1)
         {
           addLog(LOG_LEVEL_INFO, F("INIT AC: IR TX Removed"));
           delete Plugin_035_commonAc;
@@ -237,7 +236,7 @@ boolean handle_AC_IRremote(const String &cmd) {
   st.model = IRac::strToModel(tempstr.c_str(), -1); //The specific model of A/C if applicable. //strToModel();. Defaults to -1 (unknown) if missing from JSON
   tempstr = doc[F("power")].as<String>();
   st.power = IRac::strToBool(tempstr.c_str(), false); //POWER ON or OFF. Defaults to false if missing from JSON
-  st.degrees = doc[F("temp")] | 22.0;                //What temperature should the unit be set to?. Defaults to 22c if missing from JSON
+  st.degrees = doc[F("temp")] | 22.0f;                //What temperature should the unit be set to?. Defaults to 22c if missing from JSON
   tempstr = doc[F("use_celsius")].as<String>();
   st.celsius = IRac::strToBool(tempstr.c_str(), true); //Use degreees Celsius, otherwise Fahrenheit. Defaults to true if missing from JSON
   tempstr = doc[F("mode")].as<String>();
@@ -298,7 +297,7 @@ boolean handleRawRaw2Encoding(const String &cmd) {
 
   uint16_t idx = 0; //If this goes above the buf.size then the esp will throw a 28 EXCCAUSE
   uint16_t *buf;
-  buf = new uint16_t[P35_Ntimings]; //The Raw Timings that we can buffer.
+  buf = new (std::nothrow) uint16_t[P35_Ntimings]; //The Raw Timings that we can buffer.
   if (buf == nullptr)
   { // error assigning memory.
     return false;

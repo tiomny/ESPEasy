@@ -2,10 +2,15 @@
 
 #include <ctype.h>
 #include <IPAddress.h>
+
 #include "../../ESPEasy_common.h"
-#include "../../ESPEasy_fdwdecl.h"
+
 #include "../DataStructs/ESPEasy_EventStruct.h"
-#include "../DataStructs/EventValueSource.h"
+#include "../DataTypes/EventValueSource.h"
+
+#include "../ESPEasyCore/ESPEasyWifi.h"
+#include "../ESPEasyCore/Serial.h"
+
 #include "../Helpers/Numerical.h"
 #include "../Helpers/StringConverter.h"
 
@@ -24,6 +29,11 @@ String return_command_failed()
 String return_incorrect_nr_arguments()
 {
   return F("Too many arguments, try using quotes!");
+}
+
+String return_incorrect_source()
+{
+  return F("Command not allowed from this source!");
 }
 
 String return_not_connected()

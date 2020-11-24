@@ -1,3 +1,4 @@
+#include "_Plugin_Helper.h"
 #ifdef USES_P008
 //#######################################################################################################
 //################################# Plugin 008: Wiegand RFID Tag Reader #################################
@@ -13,7 +14,7 @@ History:
 No initial history available.
 */
 
-#include "_Plugin_Helper.h"
+
 
 #define PLUGIN_008
 #define PLUGIN_ID_008         8
@@ -60,7 +61,7 @@ boolean Plugin_008(byte function, struct EventStruct *event, String& string)
       {
         Device[++deviceCount].Number = PLUGIN_ID_008;
         Device[deviceCount].Type = DEVICE_TYPE_DUAL;
-        Device[deviceCount].VType = SENSOR_TYPE_LONG;
+        Device[deviceCount].VType = Sensor_VType::SENSOR_TYPE_LONG;
         Device[deviceCount].Ports = 0;
         Device[deviceCount].PullUpOption = false;
         Device[deviceCount].InverseLogicOption = false;

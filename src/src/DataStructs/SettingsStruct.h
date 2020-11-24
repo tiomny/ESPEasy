@@ -2,14 +2,44 @@
 #ifndef DATASTRUCTS_SETTINGSSTRUCT_H
 #define DATASTRUCTS_SETTINGSSTRUCT_H
 
-
-#include "../DataStructs/ESPEasyLimits.h"
+#include "../CustomBuild/ESPEasyLimits.h"
+#include "../DataTypes/EthernetParameters.h"
+#include "../DataTypes/NetworkMedium.h"
 #include "../Globals/Plugins.h"
+#include "../../ESPEasy_common.h"
 
 //we disable SPI if not defined
 #ifndef DEFAULT_SPI
  #define DEFAULT_SPI 0
 #endif
+
+
+// FIXME TD-er: Move this PinBootState to DataTypes folder
+
+// State is stored, so don't change order
+enum class PinBootState {
+  Default_state  = 0,
+  Output_low     = 1,
+  Output_high    = 2,
+  Input_pullup   = 3,
+  Input_pulldown = 4,  // Only on ESP32 and GPIO16 on ESP82xx
+  Input          = 5,
+
+  // Options for later:
+  // ANALOG (only on ESP32)
+  // WAKEUP_PULLUP (only on ESP8266)
+  // WAKEUP_PULLDOWN (only on ESP8266)
+  // SPECIAL
+  // FUNCTION_0 (only on ESP8266)
+  // FUNCTION_1
+  // FUNCTION_2
+  // FUNCTION_3
+  // FUNCTION_4
+  // FUNCTION_5 (only on ESP32)
+  // FUNCTION_6 (only on ESP32)
+
+};
+
 
 /*********************************************************************************************\
  * SettingsStruct
@@ -86,6 +116,12 @@ class SettingsStruct_tmpl
   // Return hostname with explicit set append unit.
   String getHostname(bool appendUnit) const;
 
+  PinBootState getPinBootState(uint8_t gpio_pin) const;
+  void setPinBootState(uint8_t gpio_pin, PinBootState state);
+
+
+
+
   unsigned long PID;
   int           Version;
   int16_t       Build;
@@ -103,7 +139,7 @@ class SettingsStruct_tmpl
   int8_t        Pin_i2c_scl;
   int8_t        Pin_status_led;
   int8_t        Pin_sd_cs;
-  int8_t        PinBootStates[17];  // FIXME TD-er: this is ESP8266 number of pins. ESP32 has double.
+  int8_t        PinBootStates[17];  // Only use getPinBootState and setPinBootState as multiple pins are packed for ESP32
   byte          Syslog_IP[4];
   unsigned int  UDPPort;
   byte          SyslogLevel;
@@ -146,8 +182,8 @@ class SettingsStruct_tmpl
   boolean       TaskDevicePin1Inversed[N_TASKS];
   float         TaskDevicePluginConfigFloat[N_TASKS][PLUGIN_CONFIGFLOATVAR_MAX];
   long          TaskDevicePluginConfigLong[N_TASKS][PLUGIN_CONFIGLONGVAR_MAX];
-  boolean       OLD_TaskDeviceSendData[N_TASKS];
-  boolean       TaskDeviceGlobalSync[N_TASKS];
+  byte          OLD_TaskDeviceSendData[N_TASKS];
+  byte          OLD_TaskDeviceGlobalSync[N_TASKS];
   byte          TaskDeviceDataFeed[N_TASKS];    // When set to 0, only read local connected sensorsfeeds
   unsigned long TaskDeviceTimer[N_TASKS];
   boolean       TaskDeviceEnabled[N_TASKS];
@@ -187,23 +223,27 @@ class SettingsStruct_tmpl
   int8_t        ETH_Pin_mdc;
   int8_t        ETH_Pin_mdio;
   int8_t        ETH_Pin_power;
-  int8_t        ETH_Phy_Type;
-  uint8_t       ETH_Clock_Mode;
+  EthPhyType_t   ETH_Phy_Type;
+  EthClockMode_t ETH_Clock_Mode;
   byte          ETH_IP[4];
   byte          ETH_Gateway[4];
   byte          ETH_Subnet[4];
   byte          ETH_DNS[4];
-  uint8_t       ETH_Wifi_Mode;
+  NetworkMedium_t NetworkMedium;
   int8_t        I2C_Multiplexer_Type;
   int8_t        I2C_Multiplexer_Addr;
   int8_t        I2C_Multiplexer_Channel[N_TASKS];
   uint8_t       I2C_Flags[N_TASKS];
   uint32_t      I2C_clockSpeed_Slow;
   uint8_t       I2C_Multiplexer_ResetPin;
+
+  #ifdef ESP32
+  int8_t        PinBootStates_ESP32[24]; // pins 17 ... 39
+  #endif
 };
 
 /*
-SettingsStruct* SettingsStruct_ptr = new SettingsStruct;
+SettingsStruct* SettingsStruct_ptr = new (std::nothrow) SettingsStruct;
 SettingsStruct& Settings = *SettingsStruct_ptr;
 */
 

@@ -1,3 +1,4 @@
+#include "_Plugin_Helper.h"
 #ifdef USES_P050
 
 // #######################################################################################################
@@ -12,7 +13,7 @@
 //
 
 #include "Adafruit_TCS34725.h"
-#include "_Plugin_Helper.h"
+
 
 #define PLUGIN_050
 #define PLUGIN_ID_050        50
@@ -33,7 +34,7 @@ boolean Plugin_050(byte function, struct EventStruct *event, String& string)
     {
       Device[++deviceCount].Number           = PLUGIN_ID_050;
       Device[deviceCount].Type               = DEVICE_TYPE_I2C;
-      Device[deviceCount].VType              = SENSOR_TYPE_QUAD;
+      Device[deviceCount].VType              = Sensor_VType::SENSOR_TYPE_QUAD;
       Device[deviceCount].Ports              = 0;
       Device[deviceCount].PullUpOption       = false;
       Device[deviceCount].InverseLogicOption = false;

@@ -1,10 +1,10 @@
+#include "_Plugin_Helper.h"
 #ifdef USES_P011
 
 // #######################################################################################################
 // #################################### Plugin 011: Pro Mini Extender ####################################
 // #######################################################################################################
 
-#include "_Plugin_Helper.h"
 
 #define PLUGIN_011
 #define PLUGIN_ID_011         11
@@ -23,7 +23,7 @@ boolean Plugin_011(byte function, struct EventStruct *event, String& string)
     {
       Device[++deviceCount].Number           = PLUGIN_ID_011;
       Device[deviceCount].Type               = DEVICE_TYPE_I2C;
-      Device[deviceCount].VType              = SENSOR_TYPE_SINGLE;
+      Device[deviceCount].VType              = Sensor_VType::SENSOR_TYPE_SINGLE;
       Device[deviceCount].PullUpOption       = false;
       Device[deviceCount].InverseLogicOption = false;
       Device[deviceCount].FormulaOption      = true;

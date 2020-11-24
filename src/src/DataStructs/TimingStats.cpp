@@ -1,8 +1,9 @@
 #include "../DataStructs/TimingStats.h"
+
 #include "../../ESPEasy_common.h"
-#include "../../ESPEasy_plugindefs.h"
-#include "../../_CPlugin_Helper.h"
+#include "../DataTypes/ESPEasy_plugin_functions.h"
 #include "../Globals/CPlugins.h"
+#include "../Helpers/_CPlugin_Helper.h"
 #include "../Helpers/StringConverter.h"
 
 
@@ -17,7 +18,7 @@ unsigned long timingstats_last_reset(0);
 
 
 
-TimingStats::TimingStats() : _timeTotal(0.0), _count(0), _maxVal(0), _minVal(4294967295) {}
+TimingStats::TimingStats() : _timeTotal(0.0f), _count(0), _maxVal(0), _minVal(4294967295) {}
 
 void TimingStats::add(unsigned long time) {
   _timeTotal += static_cast<float>(time);
@@ -29,7 +30,7 @@ void TimingStats::add(unsigned long time) {
 }
 
 void TimingStats::reset() {
-  _timeTotal = 0.0;
+  _timeTotal = 0.0f;
   _count     = 0;
   _maxVal    = 0;
   _minVal    = 4294967295;
@@ -40,7 +41,7 @@ bool TimingStats::isEmpty() const {
 }
 
 float TimingStats::getAvg() const {
-  if (_count == 0) { return 0.0; }
+  if (_count == 0) { return 0.0f; }
   return _timeTotal / static_cast<float>(_count);
 }
 
@@ -227,6 +228,7 @@ String getMiscStatsName(int stat) {
     case PARSE_SYSVAR:            return F("parseSystemVariables()");
     case PARSE_SYSVAR_NOCHANGE:   return F("parseSystemVariables() No change");
     case HANDLE_SERVING_WEBPAGE:  return F("handle webpage");
+    case C018_AIR_TIME:           return F("C018 LoRa TTN - Air Time");
     case C001_DELAY_QUEUE:
     case C002_DELAY_QUEUE:
     case C003_DELAY_QUEUE:

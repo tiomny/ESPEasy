@@ -1,7 +1,14 @@
 #include "P044_data_struct.h"
 
-#include "../Helpers/ESPEasy_Storage.h"
+#ifdef USES_P044
+
+#include "../ESPEasyCore/Serial.h"
+#include "../ESPEasyCore/ESPEasyNetwork.h"
+
 #include "../Globals/EventQueue.h"
+
+#include "../Helpers/ESPEasy_Storage.h"
+#include "../Helpers/Misc.h"
 
 #define P044_RX_WAIT              PCONFIG(0)
 
@@ -29,7 +36,7 @@ void P044_Task::startServer(uint16_t portnumber) {
   }
   stopServer();
   gatewayPort     = portnumber;
-  P1GatewayServer = new WiFiServer(portnumber);
+  P1GatewayServer = new (std::nothrow) WiFiServer(portnumber);
 
   if ((nullptr != P1GatewayServer) && NetworkConnected()) {
     P1GatewayServer->begin();
@@ -196,17 +203,18 @@ bool P044_Task::validP1char(char ch) {
     case '-':
     case '*':
     case ':':
+    case '_':
       return true;
   }
   return false;
 }
 
-void P044_Task::serialBegin(int16_t rxPin, int16_t txPin,
+void P044_Task::serialBegin(const ESPEasySerialPort port, int16_t rxPin, int16_t txPin,
                             unsigned long baud, byte config) {
   serialEnd();
 
   if (rxPin >= 0) {
-    P1EasySerial = new ESPeasySerial(rxPin, txPin);
+    P1EasySerial = new (std::nothrow) ESPeasySerial(port, rxPin, txPin);
 
     if (nullptr != P1EasySerial) {
 #if defined(ESP8266)
@@ -363,3 +371,5 @@ void P044_Task::discardSerialIn() {
 bool P044_Task::isInit() const {
   return nullptr != P1GatewayServer && nullptr != P1EasySerial;
 }
+
+#endif

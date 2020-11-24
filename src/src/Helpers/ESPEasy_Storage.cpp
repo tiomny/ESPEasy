@@ -1,23 +1,36 @@
 #include "ESPEasy_Storage.h"
 
+#include "../../ESPEasy_common.h"
 
-#include "../../ESPEasyWifi.h"
-#include "../../ESPEasy_Log.h"
-#include "../Globals/Cache.h"
+#include "../CustomBuild/StorageLayout.h"
+
+#include "../DataStructs/TimingStats.h"
+
+#include "../ESPEasyCore/ESPEasy_Log.h"
+#include "../ESPEasyCore/ESPEasyWifi.h"
+#include "../ESPEasyCore/Serial.h"
+
 #include "../Globals/CRCValues.h"
-#include "../Globals/ResetFactoryDefaultPref.h"
-#include "../Globals/RTC.h"
+#include "../Globals/Cache.h"
+#include "../Globals/ESPEasyWiFiEvent.h"
+#include "../Globals/ESPEasy_Scheduler.h"
 #include "../Globals/EventQueue.h"
 #include "../Globals/ExtraTaskSettings.h"
 #include "../Globals/Plugins.h"
+#include "../Globals/RTC.h"
+#include "../Globals/ResetFactoryDefaultPref.h"
 #include "../Globals/SecuritySettings.h"
-#include "../Globals/ESPEasy_Scheduler.h"
+#include "../Globals/Settings.h"
 
-#include "../DataStructs/TimingStats.h"
-#include "../DataStructs/StorageLayout.h"
-
+#include "../Helpers/ESPEasyRTC.h"
+#include "../Helpers/ESPEasy_FactoryDefault.h"
+#include "../Helpers/ESPEasy_Storage.h"
 #include "../Helpers/ESPEasy_time_calc.h"
+#include "../Helpers/FS_Helper.h"
 #include "../Helpers/Hardware.h"
+#include "../Helpers/MDNS_Helper.h"
+#include "../Helpers/Memory.h"
+#include "../Helpers/Misc.h"
 #include "../Helpers/Numerical.h"
 #include "../Helpers/PeriodicalActions.h"
 #include "../Helpers/StringConverter.h"
@@ -27,6 +40,18 @@
 #ifdef ESP32
 #include <MD5Builder.h>
 #include <esp_partition.h>
+#endif
+
+#ifdef ESP32
+String patch_fname(const String& fname) {
+  if (fname.startsWith(F("/"))) {
+    return fname;
+  }
+  return String(F("/")) + fname;
+}
+#endif
+#ifdef ESP8266
+#define patch_fname(F) (F)
 #endif
 
 /********************************************************************************************\
@@ -89,7 +114,7 @@ String appendToFile(const String& fname, const uint8_t *data, unsigned int size)
 }
 
 bool fileExists(const String& fname) {
-  return ESPEASY_FS.exists(fname);
+  return ESPEASY_FS.exists(patch_fname(fname));
 }
 
 fs::File tryOpenFile(const String& fname, const String& mode) {
@@ -99,14 +124,14 @@ fs::File tryOpenFile(const String& fname, const String& mode) {
   if ((mode == "r") && !fileExists(fname)) {
     return f;
   }
-  f = ESPEASY_FS.open(fname, mode.c_str());
+  f = ESPEASY_FS.open(patch_fname(fname), mode.c_str());
   STOP_TIMER(TRY_OPEN_FILE);
   return f;
 }
 
 bool tryRenameFile(const String& fname_old, const String& fname_new) {
   if (fileExists(fname_old) && !fileExists(fname_new)) {
-    return ESPEASY_FS.rename(fname_old, fname_new);
+    return ESPEASY_FS.rename(patch_fname(fname_old), patch_fname(fname_new));
   }
   return false;
 }
@@ -114,7 +139,7 @@ bool tryRenameFile(const String& fname_old, const String& fname_new) {
 bool tryDeleteFile(const String& fname) {
   if (fname.length() > 0)
   {
-    bool res = ESPEASY_FS.remove(fname);
+    bool res = ESPEASY_FS.remove(patch_fname(fname));
 
     // A call to GarbageCollection() will at most erase a single block. (e.g. 8k block size)
     // A deleted file may have covered more than a single block, so try to clear multiple blocks.
@@ -184,23 +209,25 @@ String BuildFixes()
     controllerIndex_t controller_idx = firstEnabledMQTT_ControllerIndex();
     if (validControllerIndex(controller_idx)) {
       MakeControllerSettings(ControllerSettings);
-      LoadControllerSettings(controller_idx, ControllerSettings);
+      if (AllocatedControllerSettings()) {
+        LoadControllerSettings(controller_idx, ControllerSettings);
 
-      String clientid;
-      if (Settings.MQTTUseUnitNameAsClientId_unused) {
-        clientid = F("%sysname%");
-        if (Settings.appendUnitToHostname()) {
-          clientid += F("_%unit%");
+        String clientid;
+        if (Settings.MQTTUseUnitNameAsClientId_unused) {
+          clientid = F("%sysname%");
+          if (Settings.appendUnitToHostname()) {
+            clientid += F("_%unit%");
+          }
         }
-      }
-      else {
-        clientid  = F("ESPClient_%mac%");
-      }
-      safe_strncpy(ControllerSettings.ClientID, clientid, sizeof(ControllerSettings.ClientID));
+        else {
+          clientid  = F("ESPClient_%mac%");
+        }
+        safe_strncpy(ControllerSettings.ClientID, clientid, sizeof(ControllerSettings.ClientID));
 
-      ControllerSettings.mqtt_uniqueMQTTclientIdReconnect(Settings.uniqueMQTTclientIdReconnect_unused());
-      ControllerSettings.mqtt_retainFlag(Settings.MQTTRetainFlag_unused);
-      SaveControllerSettings(controller_idx, ControllerSettings);
+        ControllerSettings.mqtt_uniqueMQTTclientIdReconnect(Settings.uniqueMQTTclientIdReconnect_unused());
+        ControllerSettings.mqtt_retainFlag(Settings.MQTTRetainFlag_unused);
+        SaveControllerSettings(controller_idx, ControllerSettings);
+      }
     }
     #endif // USES_MQTT
   }
@@ -214,7 +241,7 @@ String BuildFixes()
     Settings.ETH_Pin_power  = DEFAULT_ETH_PIN_POWER;
     Settings.ETH_Phy_Type   = DEFAULT_ETH_PHY_TYPE;
     Settings.ETH_Clock_Mode = DEFAULT_ETH_CLOCK_MODE;
-    Settings.ETH_Wifi_Mode  = DEFAULT_ETH_WIFI_MODE;
+    Settings.NetworkMedium  = DEFAULT_NETWORK_MEDIUM;
   }
   if (Settings.Build < 20109) {
     Settings.SyslogPort = 514;
@@ -227,6 +254,14 @@ String BuildFixes()
       Settings.I2C_Multiplexer_Channel[x] = -1;
     }
     Settings.I2C_Multiplexer_ResetPin = -1;
+  }
+  if (Settings.Build < 20111) {
+    #ifdef ESP32
+    constexpr byte maxStatesesp32 = sizeof(Settings.PinBootStates_ESP32) / sizeof(Settings.PinBootStates_ESP32[0]);
+    for (byte i = 0; i < maxStatesesp32; ++i) {
+      Settings.PinBootStates_ESP32[i] = 0;
+    }
+    #endif
   }
 
   Settings.Build = BUILD;
@@ -263,7 +298,7 @@ void fileSystemCheck()
     }
     #endif // if defined(ESP8266)
 
-    fs::File f = tryOpenFile(SettingsType::getSettingsFileName(SettingsType::BasicSettings_Type).c_str(), "r");
+    fs::File f = tryOpenFile(SettingsType::getSettingsFileName(SettingsType::Enum::BasicSettings_Type).c_str(), "r");
 
     if (!f)
     {
@@ -329,7 +364,7 @@ String SaveSettings(void)
       memcpy(Settings.md5, tmp_md5, 16);
    */
   Settings.validate();
-  err = SaveToFile(SettingsType::getSettingsFileName(SettingsType::BasicSettings_Type).c_str(), 0, (byte *)&Settings, sizeof(Settings));
+  err = SaveToFile(SettingsType::getSettingsFileName(SettingsType::Enum::BasicSettings_Type).c_str(), 0, (byte *)&Settings, sizeof(Settings));
 
   if (err.length()) {
     return err;
@@ -355,8 +390,8 @@ String SaveSettings(void)
 
     if (WifiIsAP(WiFi.getMode())) {
       // Security settings are saved, may be update of WiFi settings or hostname.
-      wifiSetupConnect         = true;
-      wifiConnectAttemptNeeded = true;
+      WiFiEventData.wifiSetupConnect         = true;
+      WiFiEventData.wifiConnectAttemptNeeded = true;
     }
   }
   ExtendedControllerCredentials.save();
@@ -393,7 +428,7 @@ String LoadSettings()
   uint8_t calculatedMd5[16];
   MD5Builder md5;
 
-  err = LoadFromFile(SettingsType::getSettingsFileName(SettingsType::BasicSettings_Type).c_str(), 0, (byte *)&Settings, sizeof(SettingsStruct));
+  err = LoadFromFile(SettingsType::getSettingsFileName(SettingsType::Enum::BasicSettings_Type).c_str(), 0, (byte *)&Settings, sizeof(SettingsStruct));
 
   if (err.length()) {
     return err;
@@ -667,7 +702,7 @@ String SaveTaskSettings(taskIndex_t TaskIndex)
   if (ExtraTaskSettings.TaskIndex != TaskIndex) {
     return F("SaveTaskSettings taskIndex does not match");
   }
-  String err = SaveToFile(SettingsType::TaskSettings_Type,
+  String err = SaveToFile(SettingsType::Enum::TaskSettings_Type,
                           TaskIndex,
                           (byte *)&ExtraTaskSettings,
                           sizeof(struct ExtraTaskSettingsStruct));
@@ -694,17 +729,14 @@ String LoadTaskSettings(taskIndex_t TaskIndex)
 
   START_TIMER
   ExtraTaskSettings.clear();
-  String result = "";
-  result =
-    LoadFromFile(SettingsType::TaskSettings_Type, TaskIndex, (byte *)&ExtraTaskSettings, sizeof(struct ExtraTaskSettingsStruct));
+  const String result = LoadFromFile(SettingsType::Enum::TaskSettings_Type, TaskIndex, (byte *)&ExtraTaskSettings, sizeof(struct ExtraTaskSettingsStruct));
 
   // After loading, some settings may need patching.
   ExtraTaskSettings.TaskIndex = TaskIndex; // Needed when an empty task was requested
 
   if (ExtraTaskSettings.TaskDeviceValueNames[0][0] == 0) {
     // if field set empty, reload defaults
-    struct EventStruct TempEvent;
-    TempEvent.TaskIndex = TaskIndex;
+    struct EventStruct TempEvent(TaskIndex);
     String tmp;
 
     // the plugin call should populate ExtraTaskSettings with its default values.
@@ -722,7 +754,7 @@ String LoadTaskSettings(taskIndex_t TaskIndex)
 String SaveCustomTaskSettings(taskIndex_t TaskIndex, byte *memAddress, int datasize)
 {
   checkRAM(F("SaveCustomTaskSettings"));
-  return SaveToFile(SettingsType::CustomTaskSettings_Type, TaskIndex, memAddress, datasize);
+  return SaveToFile(SettingsType::Enum::CustomTaskSettings_Type, TaskIndex, memAddress, datasize);
 }
 
 /********************************************************************************************\
@@ -733,7 +765,7 @@ String SaveCustomTaskSettings(taskIndex_t TaskIndex, String strings[], uint16_t 
 {
   checkRAM(F("SaveCustomTaskSettings"));
   return SaveStringArray(
-    SettingsType::CustomTaskSettings_Type, TaskIndex,
+    SettingsType::Enum::CustomTaskSettings_Type, TaskIndex,
     strings, nrStrings, maxStringLength);
 }
 
@@ -751,7 +783,7 @@ String getCustomTaskSettingsError(byte varNr) {
 String ClearCustomTaskSettings(taskIndex_t TaskIndex)
 {
   // addLog(LOG_LEVEL_DEBUG, F("Clearing custom task settings"));
-  return ClearInFile(SettingsType::CustomTaskSettings_Type, TaskIndex);
+  return ClearInFile(SettingsType::Enum::CustomTaskSettings_Type, TaskIndex);
 }
 
 /********************************************************************************************\
@@ -761,7 +793,7 @@ String LoadCustomTaskSettings(taskIndex_t TaskIndex, byte *memAddress, int datas
 {
   START_TIMER;
   checkRAM(F("LoadCustomTaskSettings"));
-  String result = LoadFromFile(SettingsType::CustomTaskSettings_Type, TaskIndex, memAddress, datasize);
+  String result = LoadFromFile(SettingsType::Enum::CustomTaskSettings_Type, TaskIndex, memAddress, datasize);
   STOP_TIMER(LOAD_CUSTOM_TASK_STATS);
   return result;
 }
@@ -774,7 +806,7 @@ String LoadCustomTaskSettings(taskIndex_t TaskIndex, String strings[], uint16_t 
 {
   START_TIMER;
   checkRAM(F("LoadCustomTaskSettings"));
-  String result = LoadStringArray(SettingsType::CustomTaskSettings_Type,
+  String result = LoadStringArray(SettingsType::Enum::CustomTaskSettings_Type,
                            TaskIndex,
                            strings, nrStrings, maxStringLength);
   STOP_TIMER(LOAD_CUSTOM_TASK_STATS);
@@ -788,7 +820,7 @@ String SaveControllerSettings(controllerIndex_t ControllerIndex, ControllerSetti
 {
   checkRAM(F("SaveControllerSettings"));
   controller_settings.validate(); // Make sure the saved controller settings have proper values.
-  return SaveToFile(SettingsType::ControllerSettings_Type, ControllerIndex,
+  return SaveToFile(SettingsType::Enum::ControllerSettings_Type, ControllerIndex,
                     (byte *)&controller_settings, sizeof(controller_settings));
 }
 
@@ -798,7 +830,7 @@ String SaveControllerSettings(controllerIndex_t ControllerIndex, ControllerSetti
 String LoadControllerSettings(controllerIndex_t ControllerIndex, ControllerSettingsStruct& controller_settings) {
   checkRAM(F("LoadControllerSettings"));
   String result =
-    LoadFromFile(SettingsType::ControllerSettings_Type, ControllerIndex,
+    LoadFromFile(SettingsType::Enum::ControllerSettings_Type, ControllerIndex,
                  (byte *)&controller_settings, sizeof(controller_settings));
   controller_settings.validate(); // Make sure the loaded controller settings have proper values.
   return result;
@@ -812,7 +844,7 @@ String ClearCustomControllerSettings(controllerIndex_t ControllerIndex)
   checkRAM(F("ClearCustomControllerSettings"));
 
   // addLog(LOG_LEVEL_DEBUG, F("Clearing custom controller settings"));
-  return ClearInFile(SettingsType::CustomControllerSettings_Type, ControllerIndex);
+  return ClearInFile(SettingsType::Enum::CustomControllerSettings_Type, ControllerIndex);
 }
 
 /********************************************************************************************\
@@ -821,7 +853,7 @@ String ClearCustomControllerSettings(controllerIndex_t ControllerIndex)
 String SaveCustomControllerSettings(controllerIndex_t ControllerIndex, byte *memAddress, int datasize)
 {
   checkRAM(F("SaveCustomControllerSettings"));
-  return SaveToFile(SettingsType::CustomControllerSettings_Type, ControllerIndex, memAddress, datasize);
+  return SaveToFile(SettingsType::Enum::CustomControllerSettings_Type, ControllerIndex, memAddress, datasize);
 }
 
 /********************************************************************************************\
@@ -830,7 +862,7 @@ String SaveCustomControllerSettings(controllerIndex_t ControllerIndex, byte *mem
 String LoadCustomControllerSettings(controllerIndex_t ControllerIndex, byte *memAddress, int datasize)
 {
   checkRAM(F("LoadCustomControllerSettings"));
-  return LoadFromFile(SettingsType::CustomControllerSettings_Type, ControllerIndex, memAddress, datasize);
+  return LoadFromFile(SettingsType::Enum::CustomControllerSettings_Type, ControllerIndex, memAddress, datasize);
 }
 
 /********************************************************************************************\
@@ -839,7 +871,7 @@ String LoadCustomControllerSettings(controllerIndex_t ControllerIndex, byte *mem
 String SaveNotificationSettings(int NotificationIndex, byte *memAddress, int datasize)
 {
   checkRAM(F("SaveNotificationSettings"));
-  return SaveToFile(SettingsType::NotificationSettings_Type, NotificationIndex, memAddress, datasize);
+  return SaveToFile(SettingsType::Enum::NotificationSettings_Type, NotificationIndex, memAddress, datasize);
 }
 
 /********************************************************************************************\
@@ -848,7 +880,7 @@ String SaveNotificationSettings(int NotificationIndex, byte *memAddress, int dat
 String LoadNotificationSettings(int NotificationIndex, byte *memAddress, int datasize)
 {
   checkRAM(F("LoadNotificationSettings"));
-  return LoadFromFile(SettingsType::NotificationSettings_Type, NotificationIndex, memAddress, datasize);
+  return LoadFromFile(SettingsType::Enum::NotificationSettings_Type, NotificationIndex, memAddress, datasize);
 }
 
 /********************************************************************************************\
@@ -862,8 +894,6 @@ String InitFile(const String& fname, int datasize)
   fs::File f = tryOpenFile(fname, "w");
 
   if (f) {
-    SPIFFS_CHECK(f, fname.c_str());
-
     for (int x = 0; x < datasize; x++)
     {
       // See https://github.com/esp8266/Arduino/commit/b1da9eda467cc935307d553692fdde2e670db258#r32622483
@@ -989,8 +1019,6 @@ String ClearInFile(const char *fname, int index, int datasize)
   fs::File f = tryOpenFile(fname, "r+");
 
   if (f) {
-    SPIFFS_CHECK(f,                          fname);
-
     SPIFFS_CHECK(f.seek(index, fs::SeekSet), fname);
 
     for (int x = 0; x < datasize; x++)
@@ -1044,7 +1072,7 @@ String LoadFromFile(const char *fname, int offset, byte *memAddress, int datasiz
    Wrapper functions to handle errors in accessing settings
  \*********************************************************************************************/
 String getSettingsFileIndexRangeError(bool read, SettingsType::Enum settingsType, int index) {
-  if (settingsType >= SettingsType::SettingsType_MAX) {
+  if (settingsType >= SettingsType::Enum::SettingsType_MAX) {
     String error = F("Unknown settingsType: ");
     error += static_cast<int>(settingsType);
     return error;
@@ -1253,7 +1281,7 @@ bool getCacheFileCounters(uint16_t& lowest, uint16_t& highest, size_t& filesizeH
   highest         = 0;
   filesizeHighest = 0;
 #ifdef ESP8266
-  Dir dir = ESPEASY_FS.openDir("cache");
+  Dir dir = ESPEASY_FS.openDir(F("cache"));
 
   while (dir.next()) {
     String filename = dir.fileName();
@@ -1272,7 +1300,7 @@ bool getCacheFileCounters(uint16_t& lowest, uint16_t& highest, size_t& filesizeH
   }
 #endif // ESP8266
 #ifdef ESP32
-  File root = ESPEASY_FS.open("/cache");
+  File root = ESPEASY_FS.open(F("/cache"));
   File file = root.openNextFile();
 
   while (file)
