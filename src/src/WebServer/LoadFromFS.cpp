@@ -15,7 +15,9 @@
 // ********************************************************************************
 bool loadFromFS(boolean spiffs, String path) {
   // path is a deepcopy, since it will be changed here.
+  #ifndef BUILD_NO_RAM_TRACKER
   checkRAM(F("loadFromFS"));
+  #endif
 
   if (!isLoggedIn()) { return false; }
 
@@ -41,7 +43,9 @@ bool loadFromFS(boolean spiffs, String path) {
   else if (path.endsWith(F(".json"))) { dataType = F("application/json"); }
   else if (path.endsWith(F(".txt")) ||
            path.endsWith(F(".dat"))) { dataType = F("application/octet-stream"); }
+#ifdef WEBSERVER_CUSTOM
   else if (path.endsWith(F(".esp"))) { return handle_custom(path); }
+#endif
 
 #ifndef BUILD_NO_DEBUG
 
