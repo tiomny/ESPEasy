@@ -161,9 +161,9 @@ String getLabel(LabelType::Enum label) {
     case LabelType::ETH_SPEED:              return F("Eth Speed");
     case LabelType::ETH_STATE:              return F("Eth State");
     case LabelType::ETH_SPEED_STATE:        return F("Eth Speed State");
-    case LabelType::ETH_WIFI_MODE:          return F("Network Type");
     case LabelType::ETH_CONNECTED:          return F("Eth connected");
 #endif // ifdef HAS_ETHERNET
+    case LabelType::ETH_WIFI_MODE:          return F("Network Type");
   }
   return F("MissingString");
 }
@@ -237,7 +237,8 @@ String getValue(LabelType::Enum label) {
     case LabelType::SSID:                   return WiFi.SSID();
     case LabelType::BSSID:                  return WiFi.BSSIDstr();
     case LabelType::CHANNEL:                return String(WiFi.channel());
-    case LabelType::ENCRYPTION_TYPE_STA:    return WiFi_AP_Candidates.getCurrent().encryption_type();
+    case LabelType::ENCRYPTION_TYPE_STA:    return // WiFi_AP_Candidates.getCurrent().encryption_type();
+                                                   WiFi_encryptionType(WiFiEventData.auth_mode);
     case LabelType::CONNECTED:              return format_msec_duration(WiFiEventData.lastConnectMoment.millisPassedSince());
 
     // Use only the nr of seconds to fit it in an int32, plus append '000' to have msec format again.
@@ -300,9 +301,9 @@ String getValue(LabelType::Enum label) {
     case LabelType::ETH_SPEED:              return eth_connected ? getEthSpeed() : F("No Ethernet");
     case LabelType::ETH_STATE:              return eth_connected ? (ETH.linkUp() ? F("Link Up") : F("Link Down")) : F("No Ethernet");
     case LabelType::ETH_SPEED_STATE:        return eth_connected ? getEthLinkSpeedState() : F("No Ethernet");
-    case LabelType::ETH_WIFI_MODE:          return active_network_medium == NetworkMedium_t::WIFI ? F("WIFI") : F("ETHERNET");
     case LabelType::ETH_CONNECTED:          return eth_connected ? F("CONNECTED") : F("DISCONNECTED"); // 0=disconnected, 1=connected
 #endif // ifdef HAS_ETHERNET
+    case LabelType::ETH_WIFI_MODE:          return active_network_medium == NetworkMedium_t::WIFI ? F("WIFI") : F("ETHERNET");
   }
   return F("MissingString");
 }
