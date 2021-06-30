@@ -2,13 +2,15 @@
 
 #ifdef HAS_ETHERNET
 
-#include "ESPEasyNetwork.h"
-#include "ETH.h"
-#include "eth_phy/phy.h"
+#include "../ESPEasyCore/ESPEasyNetwork.h"
+#include "../ESPEasyCore/ESPEasy_Log.h"
+#include "../Globals/ESPEasyWiFiEvent.h"
 #include "../Globals/NetworkState.h"
 #include "../Globals/Settings.h"
 #include "../Helpers/StringConverter.h"
-#include "../ESPEasyCore/ESPEasy_Log.h"
+
+#include <ETH.h>
+#include <eth_phy/phy.h>
 
 bool ethUseStaticIP() {
   return Settings.ETH_IP[0] != 0 && Settings.ETH_IP[0] != 255;
@@ -80,33 +82,70 @@ void ethPrintSettings() {
   }
 }
 
-uint8_t * ETHMacAddress(uint8_t* mac) {
-    esp_eth_get_mac(mac);
-    return mac;
+MAC_address ETHMacAddress() {
+  MAC_address mac;
+  if(!EthEventData.ethInitSuccess) {
+    addLog(LOG_LEVEL_ERROR, F("Call NetworkMacAddress() only on connected Ethernet!"));
+  } else {
+    esp_eth_get_mac(mac.mac);
+  }
+  return mac;
 }
 
 bool ETHConnectRelaxed() {
+  if (EthEventData.ethInitSuccess) {
+    return EthLinkUp();
+  }
   ethPrintSettings();
   if (!ethCheckSettings())
   {
     addLog(LOG_LEVEL_ERROR, F("ETH: Settings not correct!!!"));
-
+    EthEventData.ethInitSuccess = false;
     return false;
   }
-  if (!ETH.begin( Settings.ETH_Phy_Addr,
-                  Settings.ETH_Pin_power,
-                  Settings.ETH_Pin_mdc,
-                  Settings.ETH_Pin_mdio,
-                  (eth_phy_type_t)Settings.ETH_Phy_Type,
-                  (eth_clock_mode_t)Settings.ETH_Clock_Mode)) 
-  {
-    return false;
+  EthEventData.markEthBegin();
+  EthEventData.ethInitSuccess = ETH.begin( 
+    Settings.ETH_Phy_Addr,
+    Settings.ETH_Pin_power,
+    Settings.ETH_Pin_mdc,
+    Settings.ETH_Pin_mdio,
+    (eth_phy_type_t)Settings.ETH_Phy_Type,
+    (eth_clock_mode_t)Settings.ETH_Clock_Mode);
+  if (EthEventData.ethInitSuccess) {
+    EthEventData.ethConnectAttemptNeeded = false;
   }
-  return true;
+  return EthEventData.ethInitSuccess;
 }
 
 bool ETHConnected() {
-  return eth_connected;
+  if (EthEventData.EthServicesInitialized()) {
+    if (EthLinkUp()) {
+      return true;
+    }
+    // Apparently we missed an event
+    EthEventData.processedDisconnect = false;
+  } else if (EthEventData.ethInitSuccess) {
+    if (EthLinkUp()) {
+      EthEventData.setEthConnected();
+      if (NetworkLocalIP() != IPAddress(0, 0, 0, 0) && 
+          !EthEventData.EthGotIP()) {
+        EthEventData.processedGotIP = false;
+      }
+      if (EthEventData.lastConnectMoment.isSet()) {
+        if (!EthEventData.EthServicesInitialized()) {
+          if (EthEventData.lastConnectMoment.millisPassedSince() > 10000 &&
+              EthEventData.lastGetIPmoment.isSet()) {
+            EthEventData.processedGotIP = false;
+            EthEventData.markLostIP();
+          }
+        }
+      }
+      return false;
+    } else {
+      setNetworkMedium(NetworkMedium_t::WIFI);
+    }
+  }
+  return false;
 }
 
 #endif

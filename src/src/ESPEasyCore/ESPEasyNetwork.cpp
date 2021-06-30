@@ -3,28 +3,42 @@
 #include "../ESPEasyCore/ESPEasy_Log.h"
 #include "../ESPEasyCore/ESPEasyEth.h"
 #include "../ESPEasyCore/ESPEasyWifi.h"
+#include "../Globals/ESPEasyWiFiEvent.h"
 #include "../Globals/NetworkState.h"
 #include "../Globals/Settings.h"
+
+#include "../Helpers/Network.h"
 #include "../Helpers/StringConverter.h"
 #include "../Helpers/MDNS_Helper.h"
 
 #ifdef HAS_ETHERNET
-#include "ETH.h"
+#include <ETH.h>
 #endif
 
-void setNetworkMedium(NetworkMedium_t medium) {
+void setNetworkMedium(NetworkMedium_t new_medium) {
+  if (active_network_medium == new_medium) {
+    return;
+  }
   switch (active_network_medium) {
     case NetworkMedium_t::Ethernet:
       #ifdef HAS_ETHERNET
       // FIXME TD-er: How to 'end' ETH?
 //      ETH.end();
+      if (new_medium == NetworkMedium_t::WIFI) {
+        WiFiEventData.clearAll();
+      }
       #endif
       break;
     case NetworkMedium_t::WIFI:
-      WiFi.mode(WIFI_OFF);
+      WiFiEventData.timerAPoff.setMillisFromNow(WIFI_AP_OFF_TIMER_DURATION);
+      WiFiEventData.timerAPstart.clear();
+      if (new_medium == NetworkMedium_t::Ethernet) {
+        WifiDisconnect();
+      }
       break;
   }
-  active_network_medium = medium;
+  statusLED(true);
+  active_network_medium = new_medium;
   addLog(LOG_LEVEL_INFO, String(F("Set Network mode: ")) + toString(active_network_medium));
 }
 
@@ -59,7 +73,7 @@ bool NetworkConnected() {
 IPAddress NetworkLocalIP() {
   #ifdef HAS_ETHERNET
   if(active_network_medium == NetworkMedium_t::Ethernet) {
-    if(eth_connected) {
+    if(EthEventData.ethInitSuccess) {
       return ETH.localIP();
     } else {
       addLog(LOG_LEVEL_ERROR, F("Call NetworkLocalIP() only on connected Ethernet!"));
@@ -73,7 +87,7 @@ IPAddress NetworkLocalIP() {
 IPAddress NetworkSubnetMask() {
   #ifdef HAS_ETHERNET
   if(active_network_medium == NetworkMedium_t::Ethernet) {
-    if(eth_connected) {
+    if(EthEventData.ethInitSuccess) {
       return ETH.subnetMask();
     } else {
       addLog(LOG_LEVEL_ERROR, F("Call NetworkSubnetMask() only on connected Ethernet!"));
@@ -87,7 +101,7 @@ IPAddress NetworkSubnetMask() {
 IPAddress NetworkGatewayIP() {
   #ifdef HAS_ETHERNET
   if(active_network_medium == NetworkMedium_t::Ethernet) {
-    if(eth_connected) {
+    if(EthEventData.ethInitSuccess) {
       return ETH.gatewayIP();
     } else {
       addLog(LOG_LEVEL_ERROR, F("Call NetworkGatewayIP() only on connected Ethernet!"));
@@ -101,7 +115,7 @@ IPAddress NetworkGatewayIP() {
 IPAddress NetworkDnsIP (uint8_t dns_no) {
   #ifdef HAS_ETHERNET
   if(active_network_medium == NetworkMedium_t::Ethernet) {
-    if(eth_connected) {
+    if(EthEventData.ethInitSuccess) {
       return ETH.dnsIP();
     } else {
       addLog(LOG_LEVEL_ERROR, F("Call NetworkDnsIP(uint8_t dns_no) only on connected Ethernet!"));
@@ -112,38 +126,21 @@ IPAddress NetworkDnsIP (uint8_t dns_no) {
   return WiFi.dnsIP(dns_no);
 }
 
-String NetworkMacAddress() {
+MAC_address NetworkMacAddress() {
   #ifdef HAS_ETHERNET
   if(active_network_medium == NetworkMedium_t::Ethernet) {
-    if(!eth_connected) {
-      addLog(LOG_LEVEL_ERROR, F("Call NetworkMacAddress() only on connected Ethernet!"));
-    } else {
-      return ETH.macAddress();
-    }
+    return ETHMacAddress();
   }
   #endif
-  
-  uint8_t  mac[]   = { 0, 0, 0, 0, 0, 0 };
-  uint8_t *macread = NetworkMacAddressAsBytes(mac);
-  char     macaddress[20];
-  formatMAC(macread, macaddress);
-  
-  return String(macaddress);
-}
-
-uint8_t * NetworkMacAddressAsBytes(uint8_t* mac) {
-  #ifdef HAS_ETHERNET
-  if(active_network_medium == NetworkMedium_t::Ethernet) {
-    return ETHMacAddress(mac);
-  }
-  #endif
-  return WiFi.macAddress(mac);
+  MAC_address mac;
+  WiFi.macAddress(mac.mac);
+  return mac;
 }
 
 String NetworkGetHostname() {
     #ifdef ESP32
       #ifdef HAS_ETHERNET 
-      if(Settings.NetworkMedium == NetworkMedium_t::Ethernet) {
+      if(Settings.NetworkMedium == NetworkMedium_t::Ethernet && EthEventData.ethInitSuccess) {
         return String(ETH.getHostname());
       }
       #endif
@@ -176,14 +173,44 @@ String createRFCCompliantHostname(const String& oldString) {
 }
 
 String WifiSoftAPmacAddress() {
-    uint8_t  mac[]   = { 0, 0, 0, 0, 0, 0 };
-    uint8_t *macread = WiFi.softAPmacAddress(mac);
-    char     macaddress[20];
-    formatMAC(macread, macaddress);
-    return String(macaddress);
+  MAC_address mac;
+  WiFi.softAPmacAddress(mac.mac);
+  return mac.toString();
+}
+
+String WifiSTAmacAddress() {
+  MAC_address mac;
+  WiFi.macAddress(mac.mac);
+  return mac.toString();
 }
 
 void CheckRunningServices() {
   set_mDNS();
-  SetWiFiTXpower();
+  if (active_network_medium == NetworkMedium_t::WIFI) 
+  {
+    SetWiFiTXpower();
+  }
 }
+
+#ifdef HAS_ETHERNET
+bool EthFullDuplex()
+{
+  if (EthEventData.ethInitSuccess)
+    return ETH.fullDuplex();
+  return false;
+}
+
+bool EthLinkUp()
+{
+  if (EthEventData.ethInitSuccess)
+    return ETH.linkUp();
+  return false;
+}
+
+uint8_t EthLinkSpeed()
+{
+  if (EthEventData.ethInitSuccess)
+    return ETH.linkSpeed();
+  return 0;
+}
+#endif

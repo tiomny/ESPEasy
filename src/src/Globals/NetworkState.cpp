@@ -1,12 +1,10 @@
-#include "NetworkState.h"
+#include "../Globals/NetworkState.h"
 
 #include "../../ESPEasy_common.h"
 
 
 // Ethernet Connection status
 NetworkMedium_t active_network_medium = DEFAULT_NETWORK_MEDIUM;
-bool eth_connected = false;
-
 
 bool webserverRunning(false);
 bool webserver_init(false);
